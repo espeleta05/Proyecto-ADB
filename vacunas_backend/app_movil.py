@@ -34,7 +34,7 @@ class App:
             "major": 1,
             "minor": 1001,
             "rssi": -60,
-            "source_device": "sim_app"
+            "source_device": "sim_app" 
         }
 
         response = requests.post(f"{SERVER_URL}/scan", json=data)
