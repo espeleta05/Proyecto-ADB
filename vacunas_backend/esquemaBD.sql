@@ -1,11 +1,28 @@
 -- nombre de base de datos: vacunas
 
-CREATE TABLE children (
-    id CHAR(36) PRIMARY KEY,
+CREATE TABLE patient (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     birth_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE guardian(
+    guardian_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCAHR(50) NOT NULL,
+    lastname VARCHAR(50) NOT NULL,
+    number INT NOT NULL,
+    mail VARCHAR(100) NULL,
+    address VARCHAR(200) NOT NULL,
+    notes text null
+);
+
+CREATE TABLE relaciones(
+    patient_id INT UNIQUE,
+    guardian_id INT,
+    FOREIGN KEY(patient_id) REFERENCES patient(patient_id),
+    FOREIGN KEY(guardian_id) REFERENCES guardian(guardian_id)
 );
 
 CREATE TABLE beacons (
@@ -13,11 +30,32 @@ CREATE TABLE beacons (
     uuid CHAR(36) NOT NULL,
     major INT NOT NULL,
     minor INT NOT NULL,
-    child_id CHAR(36) UNIQUE,
-    FOREIGN KEY (child_id) REFERENCES children(id)
+    lugar VARCHAR(100),
+    estado ENUM('Online','Offline') NOT NULL
 );
--- Un beacon pertenece a un niño
--- Un niño tiene un beacon
+
+CREATE TABLE radar(
+    id_beacon INT,
+    rssi INT, 
+    latitude INT,
+    longitud INT,
+    FOREIGN KEY (id_beacon) REFERENCES beacons(id_becon)
+);
+
+CREATE TABLE nfc( 
+    nfc_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    nfc_token INT UNIQUE NOT NULL,
+    patient_id INT NOT NULL, 
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id) 
+);
+
+CREATE TABLE gps(
+    gps_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    patient_id INT NOT NULL,
+    latitude INT UNIQUE,
+    longitude INT UNIQUE,
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id)
+);
 
 CREATE TABLE vaccines (
     id_vaccine INT AUTO_INCREMENT PRIMARY KEY,
@@ -39,13 +77,13 @@ CREATE TABLE vaccination_schedule (
 
 CREATE TABLE vaccinations (
     vaccination_id INT AUTO_INCREMENT PRIMARY KEY,
-    child_id CHAR(36),
+    patient_id INT(36),
     vaccine_id INT,
     worker_id INT,
     dose_number INT,
     application_date DATE,
     responsible_user VARCHAR(100),
-    FOREIGN KEY (child_id) REFERENCES children(id),
+    FOREIGN KEY (patient_id) REFERENCES patient(id),
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id_vaccine),
     FOREIGN KEY (worker_id) REFERENCES healthcare_workers(worker_id)
 );
@@ -60,27 +98,27 @@ CREATE TABLE healthcare_workers (
 
 CREATE TABLE scan_logs (
   log_id INT AUTO_INCREMENT PRIMARY KEY,
-  child_id CHAR(36) NOT NULL,
+  patient_id INT NOT NULL,
   uuid VARCHAR(36) NOT NULL,
   major INT NOT NULL,
   minor INT NOT NULL,
   rssi INT NULL,
   scanned_at DATETIME NOT NULL,
   source_device VARCHAR(30) NULL,
-  FOREIGN KEY (child_id) REFERENCES children(id)
+  FOREIGN KEY (patient_id) REFERENCES patient(id)
 );
 
 -- resumen 
 CREATE OR REPLACE VIEW v_child_vaccination_summary AS
 SELECT
-  c.id AS child_id,
+  c.id AS patient_id,
   c.first_name,
   c.last_name,
   v.id_vaccine AS vaccine_id,
   v.name AS vaccine_name,
   COUNT(vc.vaccination_id) AS applied_doses,
   MAX(vc.applied_date) AS last_applied_date
-FROM children c
+FROM patient c
 CROSS JOIN vaccines v
 LEFT JOIN vaccinations vc
   ON vc.child_id = c.id AND vc.vaccine_id = v.id_vaccine
