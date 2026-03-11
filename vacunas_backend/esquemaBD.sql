@@ -5,6 +5,10 @@ CREATE TABLE patient (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     birth_date DATE NOT NULL,
+    blood_tipe ENUM ('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
+    gender ENUM ('Masculino','Femenino') NOT NULL,
+    nfc_token INT UNIQUE NULL,
+    notes TEXT NULL
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -12,13 +16,16 @@ CREATE TABLE guardian(
     guardian_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCAHR(50) NOT NULL,
     lastname VARCHAR(50) NOT NULL,
+    birth_date DATE NOT NULL,
     number INT NOT NULL,
     mail VARCHAR(100) NULL,
     address VARCHAR(200) NOT NULL,
-    notes text null
+    curp VARCHAR(18) UNIQUE,
+    notes TEXT NULL
 );
 
-CREATE TABLE relaciones(
+CREATE TABLE relations(
+    relation_id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT UNIQUE,
     guardian_id INT,
     FOREIGN KEY(patient_id) REFERENCES patient(patient_id),
@@ -42,13 +49,6 @@ CREATE TABLE radar(
     FOREIGN KEY (id_beacon) REFERENCES beacons(id_becon)
 );
 
-CREATE TABLE nfc( 
-    nfc_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    nfc_token INT UNIQUE NOT NULL,
-    patient_id INT NOT NULL, 
-    FOREIGN KEY (patient_id) REFERENCES patient(patient_id) 
-);
-
 CREATE TABLE gps(
     gps_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
     patient_id INT NOT NULL,
@@ -60,6 +60,7 @@ CREATE TABLE gps(
 CREATE TABLE vaccines (
     id_vaccine INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    inventory INT NOT NULL,
     manufacturer VARCHAR(100),
     description TEXT,
     min_age_months INT,
@@ -68,45 +69,41 @@ CREATE TABLE vaccines (
 
 CREATE TABLE vaccination_schedule (
     id_schedule INT AUTO_INCREMENT PRIMARY KEY,
-    vaccine_id INT,
-    dose_number INT,
+    scheduled_day DATE NOT NULL,
+    vaccine_id INT NOT NULL,
+    dose_number INT NOT NULL,
     recommended_age_months INT,
     min_interval_days INT,
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id_vaccine)
 );
 
+CREATE TABLE workers (
+  worker_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50),
+  lastname VARCHAR(100),
+  role ENUM('Administrador','Almacen','Enfermero'),
+  mail VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(50) NOT NULL,
+  curp VARCHAR(18),
+  address VAARCHAR(250),
+  birth_date DATE NOT NULL
+  password_hash VARCHAR(255) NOT NULL,
+  nfc_token INT UNIQUE NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE vaccinations (
     vaccination_id INT AUTO_INCREMENT PRIMARY KEY,
-    patient_id INT(36),
+    patient_id INT,
     vaccine_id INT,
     worker_id INT,
     dose_number INT,
-    application_date DATE,
-    responsible_user VARCHAR(100),
+    application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patient(id),
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id_vaccine),
     FOREIGN KEY (worker_id) REFERENCES healthcare_workers(worker_id)
 );
 
-CREATE TABLE healthcare_workers (
-  worker_id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  full_name VARCHAR(120) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE scan_logs (
-  log_id INT AUTO_INCREMENT PRIMARY KEY,
-  patient_id INT NOT NULL,
-  uuid VARCHAR(36) NOT NULL,
-  major INT NOT NULL,
-  minor INT NOT NULL,
-  rssi INT NULL,
-  scanned_at DATETIME NOT NULL,
-  source_device VARCHAR(30) NULL,
-  FOREIGN KEY (patient_id) REFERENCES patient(id)
-);
 
 -- resumen 
 CREATE OR REPLACE VIEW v_child_vaccination_summary AS
