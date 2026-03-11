@@ -21,6 +21,7 @@ CREATE TABLE guardian(
     mail VARCHAR(100) NULL,
     address VARCHAR(200) NOT NULL,
     curp VARCHAR(18) UNIQUE,
+    estado_civil VARCHAR(50),
     notes TEXT NULL
 );
 
