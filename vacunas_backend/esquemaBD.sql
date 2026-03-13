@@ -8,7 +8,8 @@ CREATE TABLE patient (
     blood_tipe ENUM ('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
     gender ENUM ('Masculino','Femenino') NOT NULL,
     nfc_token INT UNIQUE NULL,
-    notes TEXT NULL
+    allergies TEXT NULL,
+    notes TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -106,53 +107,41 @@ CREATE TABLE vaccinations (
 );
 
 
--- resumen 
-CREATE OR REPLACE VIEW v_child_vaccination_summary AS
-SELECT
-  c.id AS patient_id,
-  c.first_name,
-  c.last_name,
-  v.id_vaccine AS vaccine_id,
-  v.name AS vaccine_name,
-  COUNT(vc.vaccination_id) AS applied_doses,
-  MAX(vc.applied_date) AS last_applied_date
-FROM patient c
-CROSS JOIN vaccines v
-LEFT JOIN vaccinations vc
-  ON vc.child_id = c.id AND vc.vaccine_id = v.id_vaccine
-GROUP BY
-  c.id, c.first_name, c.last_name,
-  v.id_vaccine, v.name;
+-----------SP Dashboard
 
--- SP para validaciones clínicas 
-DELIMITER //
+DELIMITER $$
 
-CREATE PROCEDURE validate_vaccine(
-    IN p_child CHAR(36),
-    IN p_vaccine INT,
-    IN p_dose INT
-)
+CREATE PROCEDURE Gestion_pacientes()
 BEGIN
-    DECLARE last_date DATE;
-    DECLARE min_interval INT;
-
-    SELECT application_date INTO last_date
-    FROM applications
-    WHERE child_id = p_child
-    AND vaccine_id = p_vaccine
-    AND dose_number = p_dose - 1;
-
-    SELECT min_interval_days INTO min_interval
-    FROM official_schedule
-    WHERE vaccine_id = p_vaccine
-    AND dose_number = p_dose;
-
-    IF last_date IS NOT NULL THEN
-        IF DATEDIFF(CURDATE(), last_date) < min_interval THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Intervalo insuficiente';
-        END IF;
-    END IF;
-END //
+    SELECT
+        p.patient_id,
+        p.first_name AS nombre_paciente,
+        p.last_name AS apellido_paciente,
+        g.name AS nombre_guardian,
+        g.lastname AS apellido_guardian,
+        TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS edad,
+        p.blood_tipe AS tipo_sangre,
+        p.allergies AS alergias
+    FROM patient p
+    LEFT JOIN relations r ON r.patient_id = p.patient_id
+    LEFT JOIN guardian g ON g.guardian_id = r.guardian_id;
+END $$
 
 DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE Inventario_vacunas()
+BEGIN
+    SELECT
+        name AS nombre_vacuna,
+        inventory AS cantidad_restante
+    FROM vaccines;
+END $$
+
+DELIMITER ;
+
+
+---------- SP Pacientes
+
