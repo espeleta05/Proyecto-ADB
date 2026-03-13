@@ -10,7 +10,7 @@ class App:
         self.root.title("Sistema Vacunación Infantil")
         self.root.geometry("400x600")
 
-        self.child_id = None
+        self.patient_id = None
         self.worker_id = None
         self.worker_name = None
 
@@ -40,18 +40,18 @@ class App:
         response = requests.post(f"{SERVER_URL}/scan", json=data)
 
         if response.status_code != 200:
-            messagebox.showerror("Error", "Niño no encontrado")
+            messagebox.showerror("Error", "Paciente no encontrado")
             return
 
-        child = response.json()
+        patient = response.json()
 
-        self.child_id = child["id"]
-        self.child_data = child
+        self.patient_id = patient["patient_id"]
+        self.patient_data = patient
 
-        self.show_child_screen()
+        self.show_patient_screen()
 
         # pedir alertas clinicas
-        alerts_resp = requests.get(f"{SERVER_URL}/check_schedule/{self.child_id}")
+        alerts_resp = requests.get(f"{SERVER_URL}/check_schedule/{self.patient_id}")
 
         if alerts_resp.status_code == 200:
             self.alerts_data = alerts_resp.json()
@@ -59,11 +59,11 @@ class App:
             self.alerts_data = {"alerts": []}
 
     def show_scan_logs(self):
-        if not self.child_id:
-            messagebox.showwarning("Aviso", "Primero escanea un niño")
+        if not self.patient_id:
+            messagebox.showwarning("Aviso", "Primero escanea un paciente")
             return
 
-        resp = requests.get(f"{SERVER_URL}/scan_logs/{self.child_id}")
+        resp = requests.get(f"{SERVER_URL}/scan_logs/{self.patient_id}")
         if resp.status_code != 200:
             messagebox.showerror("Error", "No se pudieron obtener logs")
             return
@@ -85,6 +85,7 @@ class App:
 
         for l in logs:
             text.insert("end", f"LOG #{l['log_id']}\n")
+            text.insert("end", f"patient_id: {l['patient_id']}\n")
             text.insert("end", f"uuid: {l['uuid']}\n")
             text.insert("end", f"major: {l['major']} | minor: {l['minor']}\n")
             text.insert("end", f"rssi: {l['rssi']} dBm\n")
@@ -92,14 +93,14 @@ class App:
             text.insert("end", f"source_device: {l['source_device']}\n")
             text.insert("end", "-" * 40 + "\n")
 
-    def show_child_screen(self):
+    def show_patient_screen(self):
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        tk.Label(self.root, text="Datos del Niño", font=("Arial", 16)).pack(pady=10)
-        tk.Label(self.root, text=f"Nombre: {self.child_data.get('first_name','')}").pack()
-        tk.Label(self.root, text=f"Apellido: {self.child_data.get('last_name','')}").pack()
-        tk.Label(self.root, text=f"Nacimiento: {self.child_data.get('birth_date','')}").pack()
+        tk.Label(self.root, text="Datos del Paciente", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.root, text=f"Nombre: {self.patient_data.get('first_name','')}").pack()
+        tk.Label(self.root, text=f"Apellido: {self.patient_data.get('last_name','')}").pack()
+        tk.Label(self.root, text=f"Nacimiento: {self.patient_data.get('birth_date','')}").pack()
 
         # --- Alertas clínicas ---
         tk.Label(self.root, text="Alertas clínicas", font=("Arial", 14)).pack(pady=10)
@@ -127,11 +128,11 @@ class App:
 
 
     def view_history(self):
-        if not self.child_id:
-            messagebox.showwarning("Aviso", "Primero escanea un niño")
+        if not self.patient_id:
+            messagebox.showwarning("Aviso", "Primero escanea un paciente")
             return
 
-        response = requests.get(f"{SERVER_URL}/child_history/{self.child_id}")
+        response = requests.get(f"{SERVER_URL}/patient_history/{self.patient_id}")
 
         if response.status_code != 200:
             messagebox.showerror("Error", "No se pudo obtener historial")
@@ -183,7 +184,7 @@ class App:
             selected = vaccines[selection[0]]
 
             data = {
-                "child_id": self.child_id,
+                "patient_id": self.patient_id,
                 "vaccine_id": selected["id"]
             }
 
@@ -213,7 +214,7 @@ class App:
             tk.Label(window, text="No hay dosis pendientes.").pack(pady=10)
             return
 
-            # Mostrar cada vacuna con detalle
+        # Mostrar cada vacuna con detalle
         for a in alerts:
             missing_nums = a.get("missing_dose_numbers", [])
             missing_text = ", ".join(str(n) for n in missing_nums) if missing_nums else "N/A"
@@ -234,24 +235,13 @@ class App:
 
     def apply_selected_vaccine(self, vaccine_id, vaccine_name, parent_window=None):
 
-        if not self.child_id:
-            messagebox.showwarning("Aviso", "Primero escanea un niño")
+        if not self.patient_id:
+            messagebox.showwarning("Aviso", "Primero escanea un paciente")
             return
-
-        # (Opcional) pre-check para dar mensaje bonito
-        try:
-            pre = requests.get(f"{SERVER_URL}/can_apply/{self.child_id}/{vaccine_id}")
-            if pre.status_code == 200:
-                info = pre.json()
-                if not info.get("can_apply", True):
-                    messagebox.showerror("No se puede aplicar", info.get("reason", "No permitido"))
-                    return
-        except:
-            pass  # si falla el pre-check, seguimos a intentar aplicar directo
 
         # Aplicar vacuna (esto ya hace validación real en backend)
         response = requests.post(f"{SERVER_URL}/apply_vaccine", json={
-            "child_id": self.child_id,
+            "patient_id": self.patient_id,
             "vaccine_id": vaccine_id,
             "worker_id": self.worker_id
         })
@@ -271,7 +261,7 @@ class App:
         messagebox.showinfo("Éxito", f"Vacuna aplicada: {vaccine_name}\nDosis: {dose}")
 
         # refrescar alertas después de aplicar
-        alerts_resp = requests.get(f"{SERVER_URL}/check_schedule/{self.child_id}")
+        alerts_resp = requests.get(f"{SERVER_URL}/check_schedule/{self.patient_id}")
         if alerts_resp.status_code == 200:
             self.alerts_data = alerts_resp.json()
 
@@ -279,7 +269,7 @@ class App:
         if parent_window:
             parent_window.destroy()
 
-        self.show_child_screen()
+        self.show_patient_screen()
 
     def login_screen(self):
         for widget in self.root.winfo_children():
