@@ -25,67 +25,115 @@ db = SQLAlchemy(app)
 print(app.url_map)
 
 # MODELOS
-class Child(db.Model):
-    __tablename__ = 'children'
-    id = db.Column(db.String(36), primary_key=True)
-    first_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
-    birth_date = db.Column(db.Date)
+class Patient(db.Model):
+    __tablename__ = 'patient'
+    patient_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    birth_date = db.Column(db.Date, nullable=False)
+    blood_type = db.Column(db.Enum('A+','A-','B+','B-','AB+','AB-','O+','O-'), nullable=False)
+    gender = db.Column(db.Enum('Masculino','Femenino'), nullable=False)
+    nfc_token = db.Column(db.Integer, unique=True)
+    allergies = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Guardian(db.Model):
+    __tablename__ = 'guardian'
+    guardian_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50), nullable=False)
+    lastname = db.Column(db.String(50), nullable=False)
+    birth_date = db.Column(db.Date, nullable=False)
+    number = db.Column(db.Integer, nullable=False)
+    mail = db.Column(db.String(100))
+    address = db.Column(db.String(200), nullable=False)
+    curp = db.Column(db.String(18), unique=True)
+    estado_civil = db.Column(db.String(50))
+    notes = db.Column(db.Text)
+
+class Relations(db.Model):
+    __tablename__ = 'relations'
+    relation_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'), unique=True)
+    guardian_id = db.Column(db.Integer, db.ForeignKey('guardian.guardian_id'))
 
 class Beacon(db.Model):
     __tablename__ = 'beacons'
-    id_beacon = db.Column(db.Integer, primary_key=True)
-    uuid = db.Column(db.String(36))
-    major = db.Column(db.Integer)
-    minor = db.Column(db.Integer)
-    child_id = db.Column(db.String(36), db.ForeignKey('children.id'))
-
-class Vaccine(db.Model):
-    __tablename__ = 'vaccines'
-    id_vaccine = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    manufacturer = db.Column(db.String(100))
-    description = db.Column(db.String(100))
-    min_age_months = db.Column(db.Integer)
-    max_age_months = db.Column(db.Integer)
-
-class Vaccination(db.Model):
-    __tablename__ = "vaccinations"
-
-    vaccination_id = db.Column(db.Integer, primary_key=True)
-    child_id = db.Column(db.String(36), db.ForeignKey('children.id'))
-    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
-    dose_number = db.Column(db.Integer)
-    applied_date = db.Column(db.Date)
-    worker_id = db.Column(db.Integer, db.ForeignKey("healthcare_workers.worker_id"))
-
-
-class VaccinationSchedule(db.Model):
-    __tablename__ = 'vaccination_schedule'
-    id_schedule = db.Column(db.Integer, primary_key=True)
-    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
-    dose_number = db.Column(db.Integer)
-    recommended_age_months = db.Column(db.Integer)
-    min_interval_days = db.Column(db.Integer)
-
-class HealthcareWorker(db.Model):
-    __tablename__ = "healthcare_workers"
-    worker_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    full_name = db.Column(db.String(120), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-
-class ScanLog(db.Model):
-    __tablename__ = "scan_logs"
-
-    log_id = db.Column(db.Integer, primary_key=True)
-    child_id = db.Column(db.String(36), db.ForeignKey("children.id"), nullable=False)
+    id_beacon = db.Column(db.Integer, primary_key=True, autoincrement=True)
     uuid = db.Column(db.String(36), nullable=False)
     major = db.Column(db.Integer, nullable=False)
     minor = db.Column(db.Integer, nullable=False)
-    rssi = db.Column(db.Integer, nullable=True)
+    lugar = db.Column(db.String(100))
+    estado = db.Column(db.Enum('Online','Offline'), nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
+
+class Radar(db.Model):
+    __tablename__ = 'radar'
+    id_radar = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_beacon = db.Column(db.Integer, db.ForeignKey('beacons.id_beacon'))
+    rssi = db.Column(db.Integer)
+    latitude = db.Column(db.Integer)
+    longitud = db.Column(db.Integer)
+
+class Gps(db.Model):
+    __tablename__ = 'gps'
+    gps_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
+    latitude = db.Column(db.Integer, unique=True)
+    longitude = db.Column(db.Integer, unique=True)
+
+class Vaccine(db.Model):
+    __tablename__ = 'vaccines'
+    id_vaccine = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    inventory = db.Column(db.Integer, nullable=False)
+    manufacturer = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    min_age_months = db.Column(db.Integer)
+    max_age_months = db.Column(db.Integer)
+
+class VaccinationSchedule(db.Model):
+    __tablename__ = 'vaccination_schedule'
+    id_schedule = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    scheduled_day = db.Column(db.Date, nullable=False)
+    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
+    dose_number = db.Column(db.Integer, nullable=False)
+    recommended_age_months = db.Column(db.Integer)
+    min_interval_days = db.Column(db.Integer)
+
+class Worker(db.Model):
+    __tablename__ = 'workers'
+    worker_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50))
+    lastname = db.Column(db.String(100))
+    role = db.Column(db.Enum('Administrador','Almacen','Enfermero'))
+    mail = db.Column(db.String(100), unique=True, nullable=False)
+    curp = db.Column(db.String(18))
+    address = db.Column(db.String(250))
+    birth_date = db.Column(db.Date, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    nfc_token = db.Column(db.Integer, unique=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Vaccination(db.Model):
+    __tablename__ = "vaccinations"
+    vaccination_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
+    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
+    dose_number = db.Column(db.Integer)
+    applied_date = db.Column(db.Date)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.worker_id"))
+
+class ScanLog(db.Model):
+    __tablename__ = "scan_logs"
+    log_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey("patient.patient_id"), nullable=False)
+    uuid = db.Column(db.String(36), nullable=False)
+    major = db.Column(db.Integer, nullable=False)
+    minor = db.Column(db.Integer, nullable=False)
+    rssi = db.Column(db.Integer)
     scanned_at = db.Column(db.DateTime, nullable=False)
-    source_device = db.Column(db.String(30), nullable=True)
+    source_device = db.Column(db.String(30))
 
 
 # RUTA PRINCIPAL
@@ -93,22 +141,26 @@ class ScanLog(db.Model):
 def home():
     return "Servidor Vacunacion Activo"
 
-# REGISTRAR NIÑO
-@app.route("/register_child", methods=["POST"])
-def register_child():
+# REGISTRAR PACIENTE
+@app.route("/register_patient", methods=["POST"])
+def register_patient():
     data = request.json
 
-    new_child = Child(
-        id=str(uuid.uuid4()),
+    new_patient = Patient(
         first_name=data["first_name"],
         last_name=data["last_name"],
-        birth_date=data["birth_date"]
+        birth_date=data["birth_date"],
+        blood_type=data.get("blood_type", "O+"),
+        gender=data["gender"],
+        nfc_token=data.get("nfc_token"),
+        allergies=data.get("allergies"),
+        notes=data.get("notes")
     )
 
-    db.session.add(new_child)
+    db.session.add(new_patient)
     db.session.commit()
 
-    return jsonify({"message": "Niño registrado", "child_id": new_child.id})
+    return jsonify({"message": "Paciente registrado", "patient_id": new_patient.patient_id})
 
 # REGISTRAR BEACON
 @app.route("/register_beacon", methods=["POST"])
@@ -119,7 +171,9 @@ def register_beacon():
         uuid=data["uuid"],
         major=data["major"],
         minor=data["minor"],
-        child_id=data["child_id"]
+        lugar=data.get("lugar"),
+        estado=data.get("estado", "Online"),
+        patient_id=data["patient_id"]
     )
 
     db.session.add(new_beacon)
@@ -144,13 +198,13 @@ def scan():
     if not beacon:
         return jsonify({"error": "No encontrado"}), 404
 
-    child = Child.query.get(beacon.child_id)
-    if not child:
-        return jsonify({"error": "Niño no registrado"}), 404
+    patient = Patient.query.get(beacon.patient_id)
+    if not patient:
+        return jsonify({"error": "Paciente no registrado"}), 404
 
     # guardar log del escaneo (con timestamp real)
     log = ScanLog(
-        child_id=child.id,
+        patient_id=patient.patient_id,
         uuid=uuid_,
         major=major,
         minor=minor,
@@ -162,22 +216,22 @@ def scan():
     db.session.commit()
 
     return jsonify({
-        "id": child.id,
-        "first_name": child.first_name,
-        "last_name": child.last_name,
-        "birth_date": str(child.birth_date)
+        "patient_id": patient.patient_id,
+        "first_name": patient.first_name,
+        "last_name": patient.last_name,
+        "birth_date": str(patient.birth_date)
     })
 
-@app.route("/scan_logs/<child_id>", methods=["GET"])
-def get_scan_logs(child_id):
+@app.route("/scan_logs/<int:patient_id>", methods=["GET"])
+def get_scan_logs(patient_id):
 
-    logs = ScanLog.query.filter_by(child_id=child_id).order_by(ScanLog.scanned_at.desc()).limit(20).all()
+    logs = ScanLog.query.filter_by(patient_id=patient_id).order_by(ScanLog.scanned_at.desc()).limit(20).all()
 
     result = []
     for l in logs:
         result.append({
             "log_id": l.log_id,
-            "child_id": l.child_id,
+            "patient_id": l.patient_id,
             "uuid": l.uuid,
             "major": l.major,
             "minor": l.minor,
@@ -225,46 +279,69 @@ def login():
         "full_name": worker.full_name
     })
 
-
-
-@app.route("/register_vaccine", methods=["POST"])
-def register_vaccine():
+@app.route("/worker_login", methods=["POST"])
+def worker_login():
     data = request.json
+    mail = data["mail"]
+    password = data["password"]
 
-    new_vaccine = Vaccine(
-        name=data["name"],
-        min_age_months=data["min_age_months"],
-        max_age_months=data["max_age_months"]
-    )
+    worker = Worker.query.filter_by(mail=mail).first()
+    if not worker:
+        return jsonify({"error": "Correo o contraseña incorrectos"}), 401
 
-    db.session.add(new_vaccine)
-    db.session.commit()
+    ok = bcrypt.checkpw(password.encode("utf-8"), worker.password_hash.encode("utf-8"))
+    if not ok:
+        return jsonify({"error": "Correo o contraseña incorrectos"}), 401
 
-    return jsonify({"message": "Vacuna registrada"})
+    return jsonify({
+        "message": "Login exitoso",
+        "worker_id": worker.worker_id,
+        "name": worker.name,
+        "lastname": worker.lastname,
+        "role": worker.role
+    })
+
+
+
+@app.route("/vaccines", methods=["GET"])
+def get_vaccines():
+    vaccines = Vaccine.query.all()
+    result = []
+    for v in vaccines:
+        result.append({
+            "id": v.id_vaccine,
+            "name": v.name,
+            "inventory": v.inventory,
+            "manufacturer": v.manufacturer,
+            "description": v.description,
+            "min_age_months": v.min_age_months,
+            "max_age_months": v.max_age_months
+        })
+    return jsonify(result)
 
 @app.route("/apply_vaccine", methods=["POST"])
 def apply_vaccine():
     data = request.json
 
-    child_id = data["child_id"]
+    patient_id = data["patient_id"]
     vaccine_id = data["vaccine_id"]
 
     worker_id = data.get("worker_id")
     if not worker_id:
         return jsonify({"error": "Falta responsable (worker_id)"}), 400
 
-    child = Child.query.get(child_id)
+    patient = Patient.query.get(patient_id)
 
-    if not child:
-        return jsonify({"error": "Niño no encontrado"}), 404
+    if not patient:
+        return jsonify({"error": "Paciente no encontrado"}), 404
 
     # Calcular edad en meses
     today = date.today()
-    age_months = (today.year - child.birth_date.year) * 12 + (today.month - child.birth_date.month)
+    age_months = (today.year - patient.birth_date.year) * 12 + (today.month - patient.birth_date.month)
 
     # Buscar última dosis aplicada
     last_vaccination = Vaccination.query.filter_by(
-        child_id=child_id,
+        patient_id=patient_id,
         vaccine_id=vaccine_id
     ).order_by(Vaccination.dose_number.desc()).first()
 
@@ -294,7 +371,7 @@ def apply_vaccine():
 
     # Guardar aplicación
     new_vaccination = Vaccination(
-        child_id=child_id,
+        patient_id=patient_id,
         vaccine_id=vaccine_id,
         dose_number=next_dose,
         applied_date=today,
@@ -308,9 +385,9 @@ def apply_vaccine():
         "dose_number": next_dose
     })
 
-@app.route("/child_history/<child_id>", methods=["GET"])
-def child_history(child_id):
-    vaccinations = Vaccination.query.filter_by(child_id=child_id).order_by(Vaccination.applied_date.desc()).all()
+@app.route("/patient_history/<int:patient_id>", methods=["GET"])
+def patient_history(patient_id):
+    vaccinations = Vaccination.query.filter_by(patient_id=patient_id).order_by(Vaccination.applied_date.desc()).all()
 
     result = []
     for v in vaccinations:
@@ -323,15 +400,15 @@ def child_history(child_id):
 
     return jsonify(result)
 
-@app.route("/check_schedule/<child_id>", methods=["GET"])
-def check_schedule(child_id):
+@app.route("/check_schedule/<int:patient_id>", methods=["GET"])
+def check_schedule(patient_id):
 
-    child = Child.query.get(child_id)
-    if not child:
-        return jsonify({"error": "Niño no encontrado"}), 404
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"error": "Paciente no encontrado"}), 404
 
     today = date.today()
-    age_months = (today.year - child.birth_date.year) * 12 + (today.month - child.birth_date.month)
+    age_months = (today.year - patient.birth_date.year) * 12 + (today.month - patient.birth_date.month)
 
     alerts = []
 
@@ -350,7 +427,7 @@ def check_schedule(child_id):
 
         # Dosis aplicadas
         applied = Vaccination.query.filter_by(
-            child_id=child_id,
+            patient_id=patient_id,
             vaccine_id=vaccine.id_vaccine
         ).count()
 
@@ -367,26 +444,7 @@ def check_schedule(child_id):
                 "missing_dose_numbers": missing_numbers
             })
 
-    return jsonify({
-        "child_id": child.id,
-        "age_months": age_months,
-        "alerts": alerts
-    })
-
-
-@app.route("/vaccines", methods=["GET"])
-def get_vaccines():
-
-    vaccines = Vaccine.query.all()
-
-    result = []
-    for v in vaccines:
-        result.append({
-            "id": v.id_vaccine,
-            "name": v.name
-        })
-
-    return jsonify(result)
+    return jsonify({"alerts": alerts})
 
 @app.route("/can_apply/<child_id>/<int:vaccine_id>", methods=["GET"])
 def can_apply(child_id, vaccine_id):

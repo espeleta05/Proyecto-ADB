@@ -97,6 +97,26 @@ def estimate_distance(rssi, measured_power, n=2.0):
     else:
         return (0.89976) * (ratio ** 7.7095) + 0.111
 
+
+async def get_device_name(mac_address):
+    """
+    Intenta obtener el nombre del dispositivo conectando y leyendo la característica de nombre
+    """
+    client = BleakClient(mac_address)
+    try:
+        await client.connect()
+        # UUID de la característica de nombre del dispositivo
+        name_char = "00002a00-0000-1000-8000-00805f9b34fb"
+        name = await client.read_gatt_char(name_char)
+        name_str = name.decode('utf-8')
+        return name_str
+    except Exception as e:
+        return f"Error al obtener nombre: {e}"
+    finally:
+        if client.is_connected:
+            await client.disconnect()
+
+
 def detection_callback(device, advertisement_data):
     """
     Callback que se ejecuta cuando se detecta un dispositivo
@@ -109,7 +129,11 @@ def detection_callback(device, advertisement_data):
     # Mostrar todos los dispositivos detectados
     print(f"\n📱 DISPOSITIVO DETECTADO:")
     print(f"  • Dirección MAC: {device.address}")
-    print(f"  • Nombre: {advertisement_data.local_name or 'Desconocido'}")
+    nombre = advertisement_data.local_name or 'Desconocido'
+    if nombre == 'Desconocido':
+        print(f"  • Nombre: {nombre} (puedes intentar obtenerlo conectando con get_device_name('{device.address}'))")
+    else:
+        print(f"  • Nombre: {nombre}")
     print(f"  • RSSI: {advertisement_data.rssi} dBm")
     
     # Estimar distancia
