@@ -3,6 +3,42 @@ input{
     font-size: 15px;
 }
 
+
+
+.content-info{
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px 3px;
+    box-shadow:10px 10px 10px rgba(0,0,0,0.1);
+}
+
+.content-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:22px;
+    margin-bottom:10px;
+}
+
+.btn-agregar{
+    width: 40%;
+    margin: 0;
+}
+
+.total{
+    font-size: 15px;
+    margin-bottom:25px;
+    font-weight:600;
+}
+
+.search-bar-container.section{
+    width: 100%;
+    height: 45px;
+    margin-bottom: 15px;
+}
+
+
 .search-vaccine input{
 
 width:100%;
@@ -19,55 +55,89 @@ margin-bottom:30px;
 
 }
 
+.esquema{
+    text-align: center;
+    margin: 30px;
+    text-decoration: underline;
+    letter-spacing: 1px;
+    width: 100%;
+    font-style: medium;
+    font-weight: 500;
+    color: var(--secondary-color);
+}
 
 /* VACCINE LIST */
 
-.vaccine-list{
-
-display:grid;
-
-grid-template-columns:repeat(auto-fill,minmax(400px,1fr));
-
-gap:25px;
-
+.vaccine-section{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
 }
 
 
 /* VACCINE CARD */
 
 .vaccine-card{
-
-background:white;
-
-border-radius:15px;
-
-padding:20px;
-
-border:1px solid #CED4DA;
-
+    border: var(--gray-stroke) solid 1px;
+    border-radius:12px;
+    padding:20px;
 }
 
 
-.vaccine-header{
+.card-header{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:15px;
+}
 
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-margin-bottom:10px;
-
+.vaccine-info{
+    display:flex;
+    gap:30px;
+    align-items: first baseline;
 }
 
 .vaccine-id{
-
-color:#636363;
-
-margin-bottom:10px;
-
+    color: var(--gray-color);
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
+.details p{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.card-header i{
+    font-size: 0.8rem;
+    color: black;
+}
+
+.card-header h3{
+    font-size:18px;
+}
+
+.card-body{
+    display: flex;
+    flex-direction: row;
+    gap: 150px;
+}
+
+.card-body p{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size:14px;
+    margin-bottom:6px;
+}
+
+.extra{
+    display:flex;
+    flex-direction: column;
+    gap:5px;
+    height: fit-content;
+    align-items: start;
+}
 
 /* TAGS */
 
@@ -100,17 +170,17 @@ color:#0073A4;
 /* STOCK */
 
 .stock{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding:6px 12px;
+    border-radius:15px;
+    font-size:14px;
+    width:fit-content;
+}
 
-margin-top:15px;
-
-padding:6px 12px;
-
-border-radius:15px;
-
-font-size:14px;
-
-width:fit-content;
-
+.stock.text{
+padding: 0;
 }
 
 .stock.high{
@@ -121,4 +191,9 @@ color:#1D7B00;
 .stock.medium{
 background:#FFEEC0;
 color:#C08D00;
+}
+
+.stock.low{
+    background-color: var(--bad-background);
+    color: var(--bad-color);
 }
