@@ -49,12 +49,12 @@
                 <span>Dashboard</span>
             </a>
 
-            <div class="menu-item active">
+            <div class="menu-item">
                 <i class="fa-solid fa-users"></i>
                 <span>Pacientes</span>
             </div>
 
-            <div class="menu-item">
+            <div class="menu-item active">
                 <i class="fa-solid fa-syringe"></i>
                 <span>Vacunas</span>
             </div>
@@ -84,132 +84,246 @@
 
     </aside>
 
-<!-- MAIN CONTENT -->
-<main class="content">
+    <!-- MAIN CONTENT -->
+    <main class="content">
+        <div class="content-info">
+            <div class="content-header">
+                <h2 class="title">Inventario de vacunas</h2>
+                <button class="btn-agregar">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar vacuna
+                </button>
+            </div>
+        
+            <div class="total">
+                Total de vacunas registradas: 48
+            </div>
+        
+        
+                <!-- SEARCH -->
+            <div class="search-bar-container section">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Buscar vacuna por nombre o id...">
+            </div>
 
-<div class="content-header">
-<h1>Inventario de vacunas</h1>
-<button class="add-btn">Agregar vacuna</button>
-</div>
+            <p  class="esquema">Ver esquema de vacunación</p>
+        
+                <!-- VACCINE LIST -->
+            <div class="vaccine-section">
+        
+                <!-- VACCINE CARD -->
+                <div class="vaccine-card">
+                    <div class="card-header">
+                        <div class="vaccine-info">
+                            <div>
+                                <h3>Influenza</h3>
+                                <p class="vaccine-id">ID: V001 • Marca: Sanofi</p>
+                            </div>
 
-<div class="total">
-Total de vacunas registradas: 48
-</div>
+                            <div class="tag viral">Viral</div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+            
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <strong>Prevención de gripe estacional</strong>
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-hourglass"></i>
+                                Intervalo: Anual
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-prescription-bottle"></i>
+                                Dosis: 0.25-0.5 ml intramuscular
+                            </p>
+                        </div>
 
+                        <div class="extra">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Edad: 6 meses en adelante
+                            </p>
+                            <div class="stock text">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock:
+                                <div class="stock high">250 - Alto</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<!-- SEARCH -->
-<div class="search-vaccine">
-<input type="text" placeholder="Buscar vacuna por nombre o ID">
-</div>
+                <div class="vaccine-card">
+                    <div class="card-header">
+                        <div class="vaccine-info">
+                            <div>
+                                <h3>Hepatitis B</h3>
+                                <p class="vaccine-id">ID: V002 • Marca: Pfizer</p>
+                            </div>
 
+                            <div class="tag viral">Viral</div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+            
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <strong>Prevención de hepatitis B</strong>
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-hourglass"></i>
+                                Intervalo: 0, 1 y 6 meses
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-prescription-bottle"></i>
+                                Dosis: 0.5 ml intramuscular
+                            </p>
+                        </div>
 
-<!-- VACCINE LIST -->
-<div class="vaccine-list">
+                        <div class="extra">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Edad: 0-18 meses
+                            </p>
+                            <div class="stock text">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock:
+                                <div class="stock high">200 - Alto</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="vaccine-card">
+                    <div class="card-header">
+                        <div class="vaccine-info">
+                            <div>
+                                <h3>BCG</h3>
+                                <p class="vaccine-id">ID: V003 • Marca: Serum Institute</p>
+                            </div>
 
-<!-- VACCINE CARD -->
-<div class="vaccine-card">
+                            <div class="tag viral">Bacteriana</div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+            
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <strong>Vacuna contra tuberculosis</strong>
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-hourglass"></i>
+                                Intervalo: Única dosis al nacer
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-prescription-bottle"></i>
+                                Dosis: 0.1 ml intramuscular
+                            </p>
+                        </div>
 
-<div class="vaccine-header">
-<h3>Influenza</h3>
-<span class="tag viral">Viral</span>
-</div>
+                        <div class="extra">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Edad: Recien nacidos
+                            </p>
+                            <div class="stock text">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock:
+                                <div class="stock low">20 - Bajo</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<p class="vaccine-id">ID: V001 • Marca: Sanofi</p>
+                <div class="vaccine-card">
+                    <div class="card-header">
+                        <div class="vaccine-info">
+                            <div>
+                                <h3>Neumococo</h3>
+                                <p class="vaccine-id">ID: V004 • Marca: Pfizer-BioNTech</p>
+                            </div>
 
-<p>Prevención de gripe estacional</p>
-<p>Intervalo: Anual</p>
-<p>Dosis: 0.25–0.5 ml intramuscular</p>
-<p>Edad: 6 meses en adelante</p>
+                            <div class="tag viral">Viral</div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+            
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <strong>Prevención de enfermedad por neumococo</strong>
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-hourglass"></i>
+                                Intervalo: 2, 4 y 12 meses
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-prescription-bottle"></i>
+                                Dosis: 0.3 ml intramuscular
+                            </p>
+                        </div>
 
-<div class="stock high">Stock: 250 - Alto</div>
+                        <div class="extra">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Edad: 2 meses en adelante
+                            </p>
+                            <div class="stock text">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock:
+                                <div class="stock medium">90 - Medio</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-</div>
+                <div class="vaccine-card">
+                    <div class="card-header">
+                        <div class="vaccine-info">
+                            <div>
+                                <h3>Pentavalente</h3>
+                                <p class="vaccine-id">ID: V005 • Marca: Sanofi Pasteur</p>
+                            </div>
 
+                            <div class="tag viral">Combinada</div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+            
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <strong>DPT + HiB + Hepatitis B</strong>
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-hourglass"></i>
+                                Intervalo: 2, 4, 6 y 18 meses
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-prescription-bottle"></i>
+                                Dosis: 0.5 ml intramuscular
+                            </p>
+                        </div>
 
-<!-- VACCINE CARD -->
-<div class="vaccine-card">
-
-<div class="vaccine-header">
-<h3>Hepatitis B</h3>
-<span class="tag viral">Viral</span>
-</div>
-
-<p class="vaccine-id">ID: V002 • Marca: Pfizer</p>
-
-<p>Prevención de hepatitis B</p>
-<p>Intervalo: 0, 1 y 6 meses</p>
-<p>Dosis: 0.5 ml intramuscular</p>
-<p>Edad: 0-18 años</p>
-
-<div class="stock high">Stock: 200 - Alto</div>
-
-</div>
-
-
-<!-- VACCINE CARD -->
-<div class="vaccine-card">
-
-<div class="vaccine-header">
-<h3>BCG</h3>
-<span class="tag bacteria">Bacteriana</span>
-</div>
-
-<p class="vaccine-id">ID: V003 • Marca: Serum Institute</p>
-
-<p>Vacuna contra tuberculosis</p>
-<p>Intervalo: Dosis única al nacer</p>
-<p>Dosis: 0.1 ml intradérmica</p>
-<p>Edad: Recién nacidos</p>
-
-<div class="stock high">Stock: 150 - Alto</div>
-
-</div>
-
-
-<!-- VACCINE CARD -->
-<div class="vaccine-card">
-
-<div class="vaccine-header">
-<h3>Neumococo</h3>
-<span class="tag viral">Viral</span>
-</div>
-
-<p class="vaccine-id">ID: V004 • Marca: Pfizer-BioNTech</p>
-
-<p>Prevención de enfermedad por neumococo</p>
-<p>Intervalo: 2, 4 y 12 meses</p>
-<p>Dosis: 0.3 ml intramuscular</p>
-<p>Edad: 2 meses en adelante</p>
-
-<div class="stock medium">Stock: 99 - Medio</div>
-
-</div>
-
-
-<!-- VACCINE CARD -->
-<div class="vaccine-card">
-
-<div class="vaccine-header">
-<h3>Pentavalente</h3>
-<span class="tag combo">Combinada</span>
-</div>
-
-<p class="vaccine-id">ID: V005 • Marca: Sanofi Pasteur</p>
-
-<p>DPT + HiB + Hepatitis B</p>
-<p>Intervalo: 2, 4, 6 y 18 meses</p>
-<p>Dosis: 0.5 ml intramuscular</p>
-<p>Edad: 2 meses - 4 años</p>
-
-<div class="stock high">Stock: 180 - Alto</div>
-
-</div>
-
-
-</div>
-
-</main>
+                        <div class="extra">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Edad: 2 meses - 4 años
+                            </p>
+                            <div class="stock text">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock:
+                                <div class="stock high">180 - Alto</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
 </div>
 
