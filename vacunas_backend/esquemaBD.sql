@@ -85,7 +85,6 @@ CREATE TABLE workers (
   lastname VARCHAR(100),
   role ENUM('Administrador','Almacen','Enfermero'),
   mail VARCHAR(100) NOT NULL UNIQUE,
-  name VARCHAR(50) NOT NULL,
   curp VARCHAR(18),
   address VAARCHAR(250),
   birth_date DATE NOT NULL
