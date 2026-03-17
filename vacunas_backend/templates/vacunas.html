@@ -1,0 +1,217 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vacunas - Sistema Clínico</title>
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="stylesheet" href="/static/css/vacunas.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Montserrat:ital,wght@0,300..800;1,300..800&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"></head>
+
+<body>
+
+<!-- TOPBAR -->
+<div class="main-layout">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="clinic-title">ClínicaNuevoLeón</div>
+
+        <div class="search-bar-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar paciente, vacuna o doctor...">
+        </div>
+
+        
+        <button class="btn-reporte">
+            <i class="fa-solid fa-plus"></i>
+             Generar reporte
+        </button>
+        
+        <div class="profile-circle">
+            <span>RG</span>
+        </div>
+    </div>
+
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h3 class="menu-title">Principal</h3>
+
+        <nav class="menu">
+
+            <a href="{{ url_for('dashboard') }}" class="menu-item">
+                <i class="fa-solid fa-desktop"></i>                
+                <span>Dashboard</span>
+            </a>
+
+            <div class="menu-item active">
+                <i class="fa-solid fa-users"></i>
+                <span>Pacientes</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-syringe"></i>
+                <span>Vacunas</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Historial médico</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Aplicaciones</span>
+            </div>
+
+        </nav>
+
+        <div class="user-info">
+            <div class="profile-small">RG</div>
+            <div>
+                <p class="user-name">{{ name }} {{ lastname }}</p>
+                <p class="user-role">{{role}}</p>
+            </div>
+            <a href="/logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        </div>
+
+    </aside>
+
+<!-- MAIN CONTENT -->
+<main class="content">
+
+<div class="content-header">
+<h1>Inventario de vacunas</h1>
+<button class="add-btn">Agregar vacuna</button>
+</div>
+
+<div class="total">
+Total de vacunas registradas: 48
+</div>
+
+
+<!-- SEARCH -->
+<div class="search-vaccine">
+<input type="text" placeholder="Buscar vacuna por nombre o ID">
+</div>
+
+
+<!-- VACCINE LIST -->
+<div class="vaccine-list">
+
+
+<!-- VACCINE CARD -->
+<div class="vaccine-card">
+
+<div class="vaccine-header">
+<h3>Influenza</h3>
+<span class="tag viral">Viral</span>
+</div>
+
+<p class="vaccine-id">ID: V001 • Marca: Sanofi</p>
+
+<p>Prevención de gripe estacional</p>
+<p>Intervalo: Anual</p>
+<p>Dosis: 0.25–0.5 ml intramuscular</p>
+<p>Edad: 6 meses en adelante</p>
+
+<div class="stock high">Stock: 250 - Alto</div>
+
+</div>
+
+
+<!-- VACCINE CARD -->
+<div class="vaccine-card">
+
+<div class="vaccine-header">
+<h3>Hepatitis B</h3>
+<span class="tag viral">Viral</span>
+</div>
+
+<p class="vaccine-id">ID: V002 • Marca: Pfizer</p>
+
+<p>Prevención de hepatitis B</p>
+<p>Intervalo: 0, 1 y 6 meses</p>
+<p>Dosis: 0.5 ml intramuscular</p>
+<p>Edad: 0-18 años</p>
+
+<div class="stock high">Stock: 200 - Alto</div>
+
+</div>
+
+
+<!-- VACCINE CARD -->
+<div class="vaccine-card">
+
+<div class="vaccine-header">
+<h3>BCG</h3>
+<span class="tag bacteria">Bacteriana</span>
+</div>
+
+<p class="vaccine-id">ID: V003 • Marca: Serum Institute</p>
+
+<p>Vacuna contra tuberculosis</p>
+<p>Intervalo: Dosis única al nacer</p>
+<p>Dosis: 0.1 ml intradérmica</p>
+<p>Edad: Recién nacidos</p>
+
+<div class="stock high">Stock: 150 - Alto</div>
+
+</div>
+
+
+<!-- VACCINE CARD -->
+<div class="vaccine-card">
+
+<div class="vaccine-header">
+<h3>Neumococo</h3>
+<span class="tag viral">Viral</span>
+</div>
+
+<p class="vaccine-id">ID: V004 • Marca: Pfizer-BioNTech</p>
+
+<p>Prevención de enfermedad por neumococo</p>
+<p>Intervalo: 2, 4 y 12 meses</p>
+<p>Dosis: 0.3 ml intramuscular</p>
+<p>Edad: 2 meses en adelante</p>
+
+<div class="stock medium">Stock: 99 - Medio</div>
+
+</div>
+
+
+<!-- VACCINE CARD -->
+<div class="vaccine-card">
+
+<div class="vaccine-header">
+<h3>Pentavalente</h3>
+<span class="tag combo">Combinada</span>
+</div>
+
+<p class="vaccine-id">ID: V005 • Marca: Sanofi Pasteur</p>
+
+<p>DPT + HiB + Hepatitis B</p>
+<p>Intervalo: 2, 4, 6 y 18 meses</p>
+<p>Dosis: 0.5 ml intramuscular</p>
+<p>Edad: 2 meses - 4 años</p>
+
+<div class="stock high">Stock: 180 - Alto</div>
+
+</div>
+
+
+</div>
+
+</main>
+
+</div>
+
+</body>
+</html>

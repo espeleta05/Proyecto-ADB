@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard - Personal Clínico</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Montserrat:ital,wght@0,300..800;1,300..800&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="clinic-title">ClínicaNuevoLeón</div>
+
+        <div class="search-bar-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar paciente, vacuna o doctor...">
+        </div>
+
+        
+        <button class="btn-reporte">
+            <i class="fa-solid fa-plus"></i>
+             Generar reporte
+        </button>
+        
+        <div class="profile-circle">
+            <span>RG</span>
+        </div>
+    </div>
+
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h3 class="menu-title">Principal</h3>
+
+        <nav class="menu">
+
+            <div class="menu-item active">
+                <i class="fa-solid fa-desktop"></i>                
+                <span>Dashboard</span>
+            </div>
+
+            <a href="{{ url_for('pacientes') }}" class="menu-item">
+                <i class="fa-solid fa-users"></i>
+                <span>Pacientes</span>
+            </a>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-syringe"></i>
+                <span>Vacunas</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Historial médico</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Aplicaciones</span>
+            </div>
+
+        </nav>
+
+        <div class="user-info">
+            <div class="profile-small">RG</div>
+            <div>
+                <p class="user-name">{{ name }} {{ lastname }}</p>
+                <p class="user-role">{{role}}</p>
+            </div>
+            <a href="/logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+
+        <p class="date">{{ today }}</p>
+
+        <h2 class="title">Panel general</h2>
+        <h3 class="welcome">BIENVENIDO {{ name|upper }} {{ lastname|upper }}</h3>
+
+
+        <!-- DASHBOARD CARDS -->
+        <div class="cards">
+
+            <div class="card">
+                <i class="fa-solid fa-user"></i>
+                <h4>Total pacientes</h4>
+                <p>240</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-syringe"></i>
+                <h4>Vacunas en stock</h4>
+                <p>48 tipos</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-regular fa-calendar-check"></i>
+                <h4>Aplicaciones hoy</h4>
+                <p>6</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <h4>Pacientes en riesgo</h4>
+                <p>15</p>
+            </div>
+
+        </div>
+
+
+        <!-- PACIENTES -->
+        <section class="patients">
+
+            <div class="section-header">
+                <h2>Gestión de pacientes</h2>
+
+                <button class="btn-agregar">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar paciente
+                </button>
+            </div>
+
+            <div class="patients-table">
+
+                <div class="table-header">
+                    <span>PACIENTE</span>
+                    <span>TUTOR</span>
+                    <span>EDAD/SANGRE</span>
+                    <span>ALERGIAS</span>
+                    <span>ESTADO</span>
+                </div>
+
+
+                <!-- PATIENT 1 -->
+                {% for p in patients %}
+                    <div class="patient-row">
+
+                    <div class="patient-info">
+                    <div class="avatar">
+                    <i class="fa-solid fa-user"></i>
+                    </div>
+
+                    <div>
+                    <p>{{ p.first_name }} {{ p.last_name }}</p>
+                    <small>ID: P{{ p.patient_id }}</small>
+                    </div>
+
+                    </div>
+
+                    <div>{{ p.guardian }}</div>
+
+                    <div>
+                    <p>{{ p.age }} años</p>
+                    <span class="blood">{{ p.blood_type }}</span>
+                    </div>
+
+                    <div>{{ p.allergies }}</div>
+
+                    <div class="status ok">Al día</div>
+
+                    </div>
+                {% endfor %}
+            </div>
+
+            <p class="patients-count">Mostrando 3 de 240 pacientes</p>
+
+        </section>
+
+
+        <div class="second-section">
+            <section class="section-card">
+                <div class="section-header">
+                    <h2>Inventario de vacunas</h2>
+                    <div class="card-detail">
+                        <strong>Agregar vacuna</strong>
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                </div>
+    
+                <div class="vaccine-item">
+                    <div>
+                        <h4>Pfizer-BioNTech</h4>
+                        <small>COVID-19 • ARNm</small>
+                    </div>
+    
+                    <div class="stock">
+                        <p>1200 dosis</p>
+                        <small class="high">Stock alto</small>
+                    </div>
+                </div>
+    
+                <div class="vaccine-item">
+                    <div>
+                        <h4>Gardasil 9</h4>
+                        <small>VPH • Recombinante</small>
+                    </div>
+    
+                    <div class="stock">
+                        <p>10 dosis</p>
+                        <small class="low">Stock bajo</small>
+                    </div>
+                </div>
+    
+                <div class="vaccine-item">
+                    <div>
+                        <h4>Engerix-B</h4>
+                        <small>Hepatitis B • Combinante</small>
+                    </div>
+    
+                    <div class="stock">
+                        <p>1500 dosis</p>
+                        <small class="high">Stock alto</small>
+                    </div>
+                </div>
+    
+                <div class="vaccine-item">
+                    <div>
+                        <h4>Influvac</h4>
+                        <small>Influenza • Inactivada</small>
+                    </div>
+    
+                    <div class="stock">
+                        <p>450 dosis</p>
+                        <small class="medium">Stock medio</small>
+                    </div>
+                </div>
+    
+            </section>
+    
+            <section class="section-card map">
+                <div class="section-header">
+                    <h2>Mapa de pacientes en riesgo</h2>
+                    <div class="card-detail map">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <strong>Zonas en riesgo</strong>
+                    </div>
+                </div>
+
+                <div class="risk-patients">
+                    <div class="card-detail high-risk">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        2 pacientes en alto riesgo
+                    </div>
+
+                    <div class="card-detail mid-risk">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        1 paciente en medio riesgo
+                    </div>
+                </div>
+
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d57721.90674671802!2d-100.06210255327815!3d25.283393290552432!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x867d2cf1bcb7c1b1%3A0xe44fe0da3ea4c389!2s67350%20Cdad.%20de%20Allende%2C%20N.L.!5e0!3m2!1ses!2smx!4v1773602186939!5m2!1ses!2smx" width="fit-content" height="400" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </section>
+    
+        </div>
+        <!-- VACUNAS -->
+    </main>
+
+</div>
+
+</body>
+</html>

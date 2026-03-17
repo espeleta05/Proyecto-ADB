@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Pacientes</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Montserrat:ital,wght@0,300..800;1,300..800&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- TOP NAVBAR -->
+<div class="main-layout">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="clinic-title">ClínicaNuevoLeón</div>
+
+        <div class="search-bar-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar paciente, vacuna o doctor...">
+        </div>
+
+        
+        <button class="btn-reporte">
+            <i class="fa-solid fa-plus"></i>
+             Generar reporte
+        </button>
+        
+        <div class="profile-circle">
+            <span>RG</span>
+        </div>
+    </div>
+
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h3 class="menu-title">Principal</h3>
+
+        <nav class="menu">
+
+            <a href="{{ url_for('dashboard') }}" class="menu-item">
+                <i class="fa-solid fa-desktop"></i>                
+                <span>Dashboard</span>
+            </a>
+
+            <div class="menu-item active">
+                <i class="fa-solid fa-users"></i>
+                <span>Pacientes</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-syringe"></i>
+                <span>Vacunas</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Historial médico</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Aplicaciones</span>
+            </div>
+
+        </nav>
+
+        <div class="user-info">
+            <div class="profile-small">RG</div>
+            <div>
+                <p class="user-name">{{ name }} {{ lastname }}</p>
+                <p class="user-role">{{role}}</p>
+            </div>
+            <a href="/logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+        <div class="content-info">
+            
+            <div class="content-header">
+                <h2 class="title">Gestión de pacientes</h2>
+                <button class="btn-agregar">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar paciente
+                </button>
+            </div>
+
+            <div class="total">
+                Total pacientes: 240
+            </div>
+
+            <div class="search-bar-container section">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Buscar paciente por nombre o id...">
+            </div>
+    
+            <!-- PATIENT LIST -->
+            <div class="patients-section">
+    
+                <!-- PATIENT CARD -->
+                <div class="patient-card">
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>Victoria Puentes</h3>
+                                <span class="patient-id">ID: P001</span>
+                            </div>
+        
+                            <div class="risk low">
+                                Riesgo: bajo
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+    
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: 2/12/2021
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: María Puentes (madre)
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: 81 3467 2513
+                            </p>
+                        </div>
+
+                        
+                        <div class="extra">
+                            <span class="blood A">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: A+
+                            </span>
+    
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: Penicilina
+                            </span>
+                        </div>
+                    </div>
+                </div>
+    
+    
+                <!-- SECOND PATIENT -->
+                <div class="patient-card">
+    
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>Mario Nuñez</h3>
+                                <span class="patient-id">ID: P002</span>
+                            </div>
+        
+                            <div class="risk low">
+                                Riesgo: bajo
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+    
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: 3/1/2026
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: Orlando Nuñez (padre)
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: 81 6587 4658
+                            </p>
+                        </div>
+                
+                        <div class="extra">
+                            <span class="blood O">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: O+
+                            </span>
+    
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: Ninguna
+                            </span>
+                        </div>
+                    </div>
+                </div>
+    
+    
+                <!-- THIRD PATIENT -->
+                <div class="patient-card">
+    
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>Luis Pérez</h3>
+                                <span class="patient-id">ID: P003</span>
+                            </div>
+        
+                            <div class="risk high">
+                                Riesgo: alto
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+    
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: 1/26/2018
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: Mónica Pérez (madre)
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: 81 9856 1613
+                            </p>
+                        </div>
+    
+                        <div class="extra">
+                            <span class="blood A">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: A+
+                            </span>
+    
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: Anestesia
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="patient-card">
+    
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>Paola Villarreal</h3>
+                                <span class="patient-id">ID: P004</span>
+                            </div>
+        
+                            <div class="risk mid">
+                                Riesgo: medio - influenza
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+    
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: 08/12/2025
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: Alfonso Villarreal (padre)
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: 81 5851 9621
+                            </p>
+                        </div>
+    
+                        <div class="extra">
+                            <span class="blood B">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: B+
+                            </span>
+    
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: Nuez
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="patient-card">
+    
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>Miguel Quintana</h3>
+                                <span class="patient-id">ID: P005</span>
+                            </div>
+        
+                            <div class="risk low">
+                                Riesgo: bajo
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+    
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: 20/12/2025
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: Sofia Quintana (madre)
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: 81 2341 1234
+                            </p>
+                        </div>
+    
+                        <div class="extra">
+                            <span class="blood O">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: O+
+                            </span>
+    
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: Ninguna
+                            </span>
+                        </div>
+                    </div>
+                </div>
+    
+            </div>
+        </div>
+    </main>
+
+</div>
+
+</body>
+</html>
