@@ -85,7 +85,6 @@ CREATE TABLE workers (
   lastname VARCHAR(100),
   role ENUM('Administrador','Almacen','Enfermero'),
   mail VARCHAR(100) NOT NULL UNIQUE,
-  name VARCHAR(50) NOT NULL,
   curp VARCHAR(18),
   address VAARCHAR(250),
   birth_date DATE NOT NULL
@@ -141,7 +140,30 @@ BEGIN
 END $$
 
 DELIMITER ;
-
-
 ---------- SP Pacientes
 
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS pacientes $$
+CREATE PROCEDURE pacientes()
+BEGIN
+    SELECT
+        totals.total_pacientes,
+        p.patient_id,
+        p.birth_date AS fecha_nacimiento,
+        CONCAT(g.name, ' ', g.lastname) AS nombre_tutor,
+        g.number AS numero_tutor,
+        p.blood_tipe AS tipo_sangre,
+        p.allergies AS alergias
+    FROM patient p
+    CROSS JOIN (
+        SELECT COUNT(*) AS total_pacientes
+        FROM patient
+    ) totals
+    LEFT JOIN relations r ON r.patient_id = p.patient_id
+    LEFT JOIN guardian g ON g.guardian_id = r.guardian_id;
+END $$
+
+DELIMITER ;
+
+------------- SP Vacunas
