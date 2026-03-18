@@ -6,3 +6,4 @@ python-dotenv
 bcrypt
 mysql-connector-python
 bleak
+requests

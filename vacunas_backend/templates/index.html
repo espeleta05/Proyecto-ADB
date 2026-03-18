@@ -52,10 +52,10 @@
                 <span>Pacientes</span>
             </a>
 
-            <div class="menu-item">
+            <a href="{{ url_for('vacunas_page') }}" class="menu-item">
                 <i class="fa-solid fa-syringe"></i>
                 <span>Vacunas</span>
-            </div>
+            </a>
 
             <div class="menu-item">
                 <i class="fa-solid fa-file-medical"></i>
@@ -98,25 +98,25 @@
             <div class="card">
                 <i class="fa-solid fa-user"></i>
                 <h4>Total pacientes</h4>
-                <p>240</p>
+                <p>{{ total_patients }}</p>
             </div>
 
             <div class="card">
                 <i class="fa-solid fa-syringe"></i>
                 <h4>Vacunas en stock</h4>
-                <p>48 tipos</p>
+                <p>{{ total_vaccines }} tipos</p>
             </div>
 
             <div class="card">
                 <i class="fa-regular fa-calendar-check"></i>
                 <h4>Aplicaciones hoy</h4>
-                <p>6</p>
+                <p>{{ applications_today }}</p>
             </div>
 
             <div class="card">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <h4>Pacientes en riesgo</h4>
-                <p>15</p>
+                <p>N/A</p>
             </div>
 
         </div>
@@ -146,7 +146,7 @@
 
 
                 <!-- PATIENT 1 -->
-                {% for p in patients %}
+                {% for p in top_patients %}
                     <div class="patient-row">
 
                     <div class="patient-info">
@@ -176,7 +176,7 @@
                 {% endfor %}
             </div>
 
-            <p class="patients-count">Mostrando 3 de 240 pacientes</p>
+            <p class="patients-count">Mostrando {{ top_patients|length }} de {{ total_patients }} pacientes</p>
 
         </section>
 
@@ -185,59 +185,25 @@
             <section class="section-card">
                 <div class="section-header">
                     <h2>Inventario de vacunas</h2>
-                    <div class="card-detail">
+                    <div class="card-detail" id="btn-add-vaccine-dashboard">
                         <strong>Agregar vacuna</strong>
                         <i class="fa-solid fa-plus"></i>
                     </div>
                 </div>
     
+                {% for v in dashboard_vaccines %}
                 <div class="vaccine-item">
                     <div>
-                        <h4>Pfizer-BioNTech</h4>
-                        <small>COVID-19 • ARNm</small>
+                        <h4>{{ v.name }}</h4>
+                        <small>{{ v.manufacturer or 'Fabricante no definido' }}</small>
                     </div>
     
                     <div class="stock">
-                        <p>1200 dosis</p>
-                        <small class="high">Stock alto</small>
+                        <p>{{ v.inventory or 0 }} dosis</p>
+                        <small class="high">Stock</small>
                     </div>
                 </div>
-    
-                <div class="vaccine-item">
-                    <div>
-                        <h4>Gardasil 9</h4>
-                        <small>VPH • Recombinante</small>
-                    </div>
-    
-                    <div class="stock">
-                        <p>10 dosis</p>
-                        <small class="low">Stock bajo</small>
-                    </div>
-                </div>
-    
-                <div class="vaccine-item">
-                    <div>
-                        <h4>Engerix-B</h4>
-                        <small>Hepatitis B • Combinante</small>
-                    </div>
-    
-                    <div class="stock">
-                        <p>1500 dosis</p>
-                        <small class="high">Stock alto</small>
-                    </div>
-                </div>
-    
-                <div class="vaccine-item">
-                    <div>
-                        <h4>Influvac</h4>
-                        <small>Influenza • Inactivada</small>
-                    </div>
-    
-                    <div class="stock">
-                        <p>450 dosis</p>
-                        <small class="medium">Stock medio</small>
-                    </div>
-                </div>
+                {% endfor %}
     
             </section>
     
@@ -270,6 +236,95 @@
     </main>
 
 </div>
+
+<script>
+async function createPatientFromPrompts() {
+    const firstName = prompt("Nombre del paciente:");
+    if (!firstName) return;
+
+    const lastName = prompt("Apellido del paciente:");
+    if (!lastName) return;
+
+    const birthDate = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+    if (!birthDate) return;
+
+    const gender = prompt("Genero (Masculino/Femenino):", "Masculino");
+    if (!gender) return;
+
+    const bloodType = prompt("Tipo de sangre (A+, A-, B+, B-, AB+, AB-, O+, O-):", "O+");
+    const allergies = prompt("Alergias (opcional):", "") || null;
+    const notes = prompt("Notas (opcional):", "") || null;
+
+    const response = await fetch("/register_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            birth_date: birthDate,
+            gender: gender,
+            blood_type: bloodType || "O+",
+            allergies: allergies,
+            notes: notes
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || "No se pudo registrar el paciente");
+        return;
+    }
+
+    alert("Paciente agregado correctamente");
+    window.location.reload();
+}
+
+async function createVaccineFromPrompts() {
+    const name = prompt("Nombre de la vacuna:");
+    if (!name) return;
+
+    const inventory = prompt("Inventario inicial:", "0");
+    if (inventory === null) return;
+
+    const manufacturer = prompt("Fabricante (opcional):", "") || null;
+    const description = prompt("Descripcion (opcional):", "") || null;
+    const minAgeMonths = prompt("Edad minima en meses (opcional):", "");
+    if (minAgeMonths === null) return;
+    const maxAgeMonths = prompt("Edad maxima en meses (opcional):", "");
+    if (maxAgeMonths === null) return;
+
+    const response = await fetch("/register_vaccine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name: name,
+            inventory: inventory,
+            manufacturer: manufacturer,
+            description: description,
+            min_age_months: minAgeMonths,
+            max_age_months: maxAgeMonths
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || "No se pudo registrar la vacuna");
+        return;
+    }
+
+    alert("Vacuna agregada correctamente");
+    window.location.reload();
+}
+
+document.querySelectorAll(".btn-agregar").forEach((button) => {
+    button.addEventListener("click", createPatientFromPrompts);
+});
+
+const addVaccineDashboardButton = document.getElementById("btn-add-vaccine-dashboard");
+if (addVaccineDashboardButton) {
+    addVaccineDashboardButton.addEventListener("click", createVaccineFromPrompts);
+}
+</script>
 
 </body>
 </html>

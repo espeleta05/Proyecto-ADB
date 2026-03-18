@@ -5,7 +5,7 @@ CREATE TABLE patient (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     birth_date DATE NOT NULL,
-    blood_tipe ENUM ('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
+    blood_type ENUM ('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
     gender ENUM ('Masculino','Femenino') NOT NULL,
     nfc_token INT UNIQUE NULL,
     allergies TEXT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE patient (
 
 CREATE TABLE guardian(
     guardian_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCAHR(50) NOT NULL,
+    name VARCHAR(50) NOT NULL,
     lastname VARCHAR(50) NOT NULL,
     birth_date DATE NOT NULL,
     number INT NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE radar(
     rssi INT, 
     latitude INT,
     longitud INT,
-    FOREIGN KEY (id_beacon) REFERENCES beacons(id_becon)
+    FOREIGN KEY (id_beacon) REFERENCES beacons(id_beacon)
 );
 
 CREATE TABLE gps(
@@ -86,8 +86,8 @@ CREATE TABLE workers (
   role ENUM('Administrador','Almacen','Enfermero'),
   mail VARCHAR(100) NOT NULL UNIQUE,
   curp VARCHAR(18),
-  address VAARCHAR(250),
-  birth_date DATE NOT NULL
+    address VARCHAR(250),
+    birth_date DATE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   nfc_token INT UNIQUE NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -99,10 +99,10 @@ CREATE TABLE vaccinations (
     vaccine_id INT,
     worker_id INT,
     dose_number INT,
-    application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES patient(id),
+    applied_date DATE,
+    FOREIGN KEY (patient_id) REFERENCES patient(patient_id),
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id_vaccine),
-    FOREIGN KEY (worker_id) REFERENCES healthcare_workers(worker_id)
+    FOREIGN KEY (worker_id) REFERENCES workers(worker_id)
 );
 
 
@@ -119,7 +119,7 @@ BEGIN
         g.name AS nombre_guardian,
         g.lastname AS apellido_guardian,
         TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS edad,
-        p.blood_tipe AS tipo_sangre,
+        p.blood_type AS tipo_sangre,
         p.allergies AS alergias
     FROM patient p
     LEFT JOIN relations r ON r.patient_id = p.patient_id
@@ -153,7 +153,7 @@ BEGIN
         p.birth_date AS fecha_nacimiento,
         CONCAT(g.name, ' ', g.lastname) AS nombre_tutor,
         g.number AS numero_tutor,
-        p.blood_tipe AS tipo_sangre,
+        p.blood_type AS tipo_sangre,
         p.allergies AS alergias
     FROM patient p
     CROSS JOIN (

@@ -2,10 +2,12 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from dotenv import load_dotenv
+from sqlalchemy import or_
 import bcrypt
 import os
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"
@@ -15,11 +17,48 @@ db_user = os.getenv("db_user", "root")
 db_password = os.getenv("db_password", "")
 db_host = os.getenv("db_host", "localhost")
 db_name = os.getenv("db_name", "vacunas")
+db_driver = os.getenv("db_driver", "mysqlconnector")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+{db_driver}://{db_user}:{db_password}@{db_host}/{db_name}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+
+def _age_in_years(birth_date):
+    today = date.today()
+    years = today.year - birth_date.year
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        years -= 1
+    return max(years, 0)
+
+
+def ensure_default_admin():
+    admin = Worker.query.filter(
+        or_(Worker.mail == "admin", Worker.name == "admin")
+    ).first()
+
+    password_hash = bcrypt.hashpw("123".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    if admin:
+        admin.name = "admin"
+        admin.mail = "admin"
+        admin.role = "Administrador"
+        admin.password_hash = password_hash
+        db.session.commit()
+        return
+
+    admin_user = Worker(
+        name="admin",
+        lastname="system",
+        role="Administrador",
+        mail="admin",
+        password_hash=password_hash,
+        birth_date=date(2000, 1, 1)
+    )
+
+    db.session.add(admin_user)
+    db.session.commit()
 
 # =========================
 # MODELOS
@@ -183,10 +222,12 @@ def login():
 
     if request.method == "POST":
 
-        mail = request.form.get("mail")
+        identifier = request.form.get("mail", "").strip()
         password = request.form.get("password")
 
-        worker = Worker.query.filter_by(mail=mail).first()
+        worker = Worker.query.filter(
+            or_(Worker.mail == identifier, Worker.name == identifier)
+        ).first()
 
         if worker:
 
@@ -219,18 +260,47 @@ def dashboard():
     if "user_mail" not in session:
         return redirect(url_for("login"))
 
+    total_patients = Patient.query.count()
+    total_vaccines = Vaccine.query.count()
+    applications_today = Vaccination.query.filter_by(applied_date=date.today()).count()
+
+    top_patients = []
+    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+        Relations, Relations.patient_id == Patient.patient_id
+    ).outerjoin(
+        Guardian, Guardian.guardian_id == Relations.guardian_id
+    ).order_by(Patient.created_at.desc()).limit(5).all()
+
+    for patient, guardian in patient_rows:
+        top_patients.append({
+            "patient_id": patient.patient_id,
+            "first_name": patient.first_name,
+            "last_name": patient.last_name,
+            "guardian": f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
+            "age": _age_in_years(patient.birth_date),
+            "blood_type": patient.blood_type,
+            "allergies": patient.allergies or "Ninguna"
+        })
+
+    dashboard_vaccines = Vaccine.query.order_by(Vaccine.inventory.asc()).limit(4).all()
+
     return render_template(
         "index.html",
         name=session["user_name"],
         lastname=session["user_lastname"],
         role=session["role"],
-        today = today
+        today=today,
+        total_patients=total_patients,
+        total_vaccines=total_vaccines,
+        applications_today=applications_today,
+        top_patients=top_patients,
+        dashboard_vaccines=dashboard_vaccines
     )
 
 @app.route("/logout")
 def logout():
 
-    session.pop("user", None)
+    session.clear()
     return redirect(url_for("login"))
 
 @app.route("/pacientes")
@@ -238,11 +308,49 @@ def pacientes():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+        Relations, Relations.patient_id == Patient.patient_id
+    ).outerjoin(
+        Guardian, Guardian.guardian_id == Relations.guardian_id
+    ).order_by(Patient.created_at.desc()).all()
+
+    patients_data = []
+    for patient, guardian in patient_rows:
+        patients_data.append({
+            "patient_id": patient.patient_id,
+            "full_name": f"{patient.first_name} {patient.last_name}",
+            "birth_date": patient.birth_date.strftime("%d/%m/%Y"),
+            "guardian": f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
+            "contact": str(guardian.number) if guardian and guardian.number else "Sin teléfono",
+            "blood_type": patient.blood_type,
+            "allergies": patient.allergies or "Ninguna",
+            "risk": "bajo"
+        })
+
     return render_template(
         "pacientes.html",
         name=session["user_name"],
         lastname=session["user_lastname"],
-        role=session["role"]
+        role=session["role"],
+        patients=patients_data,
+        total_patients=len(patients_data)
+    )
+
+
+@app.route("/vacunas")
+def vacunas_page():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    vaccines = Vaccine.query.order_by(Vaccine.name.asc()).all()
+
+    return render_template(
+        "vacunas.html",
+        name=session["user_name"],
+        lastname=session["user_lastname"],
+        role=session["role"],
+        vaccines=vaccines,
+        total_vaccines=len(vaccines)
     )
 
 # =========================
@@ -252,7 +360,12 @@ def pacientes():
 @app.route("/register_patient", methods=["POST"])
 def register_patient():
 
-    data = request.json
+    data = request.json or {}
+
+    required = ["first_name", "last_name", "birth_date", "gender"]
+    missing = [field for field in required if not data.get(field)]
+    if missing:
+        return jsonify({"error": f"Faltan campos obligatorios: {', '.join(missing)}"}), 400
 
     birth = datetime.strptime(data["birth_date"], "%Y-%m-%d").date()
 
@@ -273,6 +386,56 @@ def register_patient():
     return jsonify({
         "message": "Paciente registrado",
         "patient_id": new_patient.patient_id
+    })
+
+
+@app.route("/register_vaccine", methods=["POST"])
+def register_vaccine():
+
+    data = request.json or {}
+
+    if not data.get("name"):
+        return jsonify({"error": "El nombre de la vacuna es obligatorio"}), 400
+
+    try:
+        inventory = int(data.get("inventory", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "El inventario debe ser un numero entero"}), 400
+
+    min_age_months = data.get("min_age_months")
+    max_age_months = data.get("max_age_months")
+
+    if min_age_months in ("", None):
+        min_age_months = None
+    else:
+        try:
+            min_age_months = int(min_age_months)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Edad minima invalida"}), 400
+
+    if max_age_months in ("", None):
+        max_age_months = None
+    else:
+        try:
+            max_age_months = int(max_age_months)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Edad maxima invalida"}), 400
+
+    vaccine = Vaccine(
+        name=data["name"].strip(),
+        inventory=inventory,
+        manufacturer=(data.get("manufacturer") or "").strip() or None,
+        description=(data.get("description") or "").strip() or None,
+        min_age_months=min_age_months,
+        max_age_months=max_age_months
+    )
+
+    db.session.add(vaccine)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Vacuna registrada",
+        "vaccine_id": vaccine.id_vaccine
     })
 
 
@@ -338,8 +501,161 @@ def scan():
 
     return jsonify({
         "patient_id": patient.patient_id,
+        "first_name": patient.first_name,
         "name": patient.first_name,
-        "last_name": patient.last_name
+        "last_name": patient.last_name,
+        "birth_date": str(patient.birth_date)
+    })
+
+
+def _age_in_months(birth_date):
+    today = date.today()
+    months = (today.year - birth_date.year) * 12 + (today.month - birth_date.month)
+    if today.day < birth_date.day:
+        months -= 1
+    return max(months, 0)
+
+
+@app.route("/scan_logs/<int:patient_id>", methods=["GET"])
+def scan_logs(patient_id):
+
+    logs = ScanLog.query.filter_by(patient_id=patient_id).order_by(ScanLog.scanned_at.desc()).all()
+
+    result = []
+    for log in logs:
+        result.append({
+            "log_id": log.log_id,
+            "patient_id": log.patient_id,
+            "uuid": log.uuid,
+            "major": log.major,
+            "minor": log.minor,
+            "rssi": log.rssi,
+            "scanned_at": str(log.scanned_at),
+            "source_device": log.source_device
+        })
+
+    return jsonify(result)
+
+
+@app.route("/check_schedule/<int:patient_id>", methods=["GET"])
+def check_schedule(patient_id):
+
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({"error": "Paciente no encontrado"}), 404
+
+    schedules = VaccinationSchedule.query.order_by(
+        VaccinationSchedule.vaccine_id.asc(),
+        VaccinationSchedule.dose_number.asc()
+    ).all()
+
+    schedule_by_vaccine = {}
+    for sch in schedules:
+        schedule_by_vaccine.setdefault(sch.vaccine_id, []).append(sch)
+
+    alerts = []
+    for vaccine_id, vaccine_schedule in schedule_by_vaccine.items():
+        vaccine = db.session.get(Vaccine, vaccine_id)
+        if not vaccine:
+            continue
+
+        applied = Vaccination.query.filter_by(
+            patient_id=patient_id,
+            vaccine_id=vaccine_id
+        ).order_by(Vaccination.dose_number.asc()).all()
+
+        applied_numbers = {v.dose_number for v in applied}
+        required_numbers = [s.dose_number for s in vaccine_schedule]
+        missing_numbers = [n for n in required_numbers if n not in applied_numbers]
+
+        if missing_numbers:
+            alerts.append({
+                "vaccine_id": vaccine_id,
+                "vaccine": vaccine.name,
+                "required_doses": len(required_numbers),
+                "applied_doses": len(applied),
+                "missing_doses": len(missing_numbers),
+                "missing_dose_numbers": missing_numbers
+            })
+
+    return jsonify({
+        "patient_id": patient_id,
+        "alerts": alerts
+    })
+
+
+@app.route("/apply_vaccine", methods=["POST"])
+def apply_vaccine():
+
+    data = request.json or {}
+    patient_id = data.get("patient_id")
+    vaccine_id = data.get("vaccine_id")
+    worker_id = data.get("worker_id") or session.get("user_id")
+
+    if not patient_id or not vaccine_id:
+        return jsonify({"error": "patient_id y vaccine_id son obligatorios"}), 400
+
+    patient = db.session.get(Patient, patient_id)
+    if not patient:
+        return jsonify({"error": "Paciente no encontrado"}), 404
+
+    vaccine = db.session.get(Vaccine, vaccine_id)
+    if not vaccine:
+        return jsonify({"error": "Vacuna no encontrada"}), 404
+
+    if vaccine.inventory is not None and vaccine.inventory <= 0:
+        return jsonify({"error": "No hay inventario disponible"}), 400
+
+    applied = Vaccination.query.filter_by(
+        patient_id=patient_id,
+        vaccine_id=vaccine_id
+    ).order_by(Vaccination.dose_number.asc()).all()
+
+    next_dose = len(applied) + 1
+
+    schedule = VaccinationSchedule.query.filter_by(
+        vaccine_id=vaccine_id,
+        dose_number=next_dose
+    ).first()
+
+    if not schedule:
+        return jsonify({"error": "No hay dosis pendiente para esta vacuna"}), 400
+
+    age_months = _age_in_months(patient.birth_date)
+    if vaccine.min_age_months is not None and age_months < vaccine.min_age_months:
+        return jsonify({"error": "Paciente fuera del rango mínimo de edad"}), 400
+
+    if vaccine.max_age_months is not None and age_months > vaccine.max_age_months:
+        return jsonify({"error": "Paciente fuera del rango máximo de edad"}), 400
+
+    if applied:
+        last_dose = applied[-1]
+        if schedule.min_interval_days:
+            days_since_last = (date.today() - last_dose.applied_date).days
+            if days_since_last < schedule.min_interval_days:
+                return jsonify({
+                    "error": f"Aún no se cumple el intervalo mínimo de {schedule.min_interval_days} días"
+                }), 400
+
+    if vaccine.inventory is not None:
+        vaccine.inventory -= 1
+
+    new_vaccination = Vaccination(
+        patient_id=patient_id,
+        vaccine_id=vaccine_id,
+        dose_number=next_dose,
+        applied_date=date.today(),
+        worker_id=worker_id
+    )
+
+    db.session.add(new_vaccination)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Vacuna aplicada correctamente",
+        "vaccination_id": new_vaccination.vaccination_id,
+        "dose_number": next_dose,
+        "inventory_left": vaccine.inventory
     })
 
 
@@ -434,5 +750,6 @@ if __name__ == "__main__":
 
     with app.app_context():
         db.create_all()
+        ensure_default_admin()
 
     app.run(host="0.0.0.0", port=5000, debug=True)

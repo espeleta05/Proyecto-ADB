@@ -48,15 +48,14 @@ class App:
         self.patient_id = patient["patient_id"]
         self.patient_data = patient
 
-        self.show_patient_screen()
-
-        # pedir alertas clinicas
         alerts_resp = requests.get(f"{SERVER_URL}/check_schedule/{self.patient_id}")
 
         if alerts_resp.status_code == 200:
             self.alerts_data = alerts_resp.json()
         else:
             self.alerts_data = {"alerts": []}
+
+        self.show_patient_screen()
 
     def show_scan_logs(self):
         if not self.patient_id:
@@ -185,7 +184,8 @@ class App:
 
             data = {
                 "patient_id": self.patient_id,
-                "vaccine_id": selected["id"]
+                "vaccine_id": selected["id"],
+                "worker_id": self.worker_id
             }
 
             response = requests.post(f"{SERVER_URL}/apply_vaccine", json=data)
@@ -239,16 +239,16 @@ class App:
             messagebox.showwarning("Aviso", "Primero escanea un paciente")
             return
 
+        if not self.worker_id:
+            messagebox.showwarning("Aviso", "Primero inicia sesión como responsable")
+            return
+
         # Aplicar vacuna (esto ya hace validación real en backend)
         response = requests.post(f"{SERVER_URL}/apply_vaccine", json={
             "patient_id": self.patient_id,
             "vaccine_id": vaccine_id,
             "worker_id": self.worker_id
         })
-
-        if not self.worker_id:
-            messagebox.showwarning("Aviso", "Primero inicia sesión como responsable")
-            return
 
         if response.status_code != 200:
             try:
@@ -289,8 +289,8 @@ class App:
             username = user_entry.get().strip()
             password = pass_entry.get().strip()
 
-            resp = requests.post(f"{SERVER_URL}/login", json={
-                "username": username,
+            resp = requests.post(f"{SERVER_URL}/worker_login", json={
+                "mail": username,
                 "password": password
             })
 
@@ -300,7 +300,7 @@ class App:
 
             data = resp.json()
             self.worker_id = data["worker_id"]
-            self.worker_name = data["full_name"]
+            self.worker_name = f"{data.get('name', '')} {data.get('lastname', '')}".strip()
 
             messagebox.showinfo("Ok", f"Bienvenido/a: {self.worker_name}")
             self.main_screen()

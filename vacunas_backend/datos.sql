@@ -1,5 +1,5 @@
 -- ---- patient ----
-INSERT INTO patient (first_name, last_name, birth_date, blood_tipe, gender, nfc_token, allergies, notes) VALUES
+INSERT INTO patient (first_name, last_name, birth_date, blood_type, gender, nfc_token, allergies, notes) VALUES
 ('Juan',      'García Torres',     '2020-03-15', 'O+',  'Masculino', 1001, NULL,                      NULL),
 ('María',     'López Hernández',   '2021-06-20', 'A+',  'Femenino',  1002, 'Penicilina',              NULL),
 ('Carlos',    'Martínez Ruiz',     '2019-11-05', 'B+',  'Masculino', 1003, NULL,                      'Prematuro'),
@@ -67,36 +67,8 @@ INSERT INTO beacons (uuid, major, minor, lugar, estado) VALUES
 ('e3a2f1b0-c4d5-6789-4567-890123456780', 300, 1,  'Laboratorio',            'Online'),
 ('f4b3a2c1-d5e6-7890-5678-901234567891', 300, 2,  'Cuarto de enfermería',   'Online');
 
--- ---- radar ----
-INSERT INTO radar (id_beacon, rssi, latitude, longitud) VALUES
-(1,  -65, 19434, -99133),
-(2,  -70, 19434, -99132),
-(3,  -55, 19435, -99133),
-(4,  -60, 19435, -99132),
-(5,  -75, 19436, -99134),
-(7,  -80, 19433, -99131),
-(8,  -50, 19437, -99135),
-(10, -68, 19432, -99130),
-(11, -72, 19438, -99136),
-(12, -58, 19439, -99137);
-
--- ---- gps ----
-INSERT INTO gps (patient_id, latitude, longitude) VALUES
-(1,  19434100, -99133200),
-(2,  20670500, -103350000),
-(3,  19042300, -98198000),
-(4,  25670000, -100316000),
-(5,  19434200, -99133100),
-(6,  21160000, -86851000),
-(7,  19434300, -99133000),
-(8,  20966000, -89623000),
-(9,  19434400, -99132900),
-(10, 21885000, -102296000),
-(11, 19434500, -99132800),
-(12, 20522000, -100983000),
-(13, 19434600, -99132700),
-(14, 21019000, -89630000),
-(15, 19434700, -99132600);
+-- ---- radar/gps ----
+-- Estas tablas no existen en el modelo actual de SQLAlchemy.
 
 -- ---- vaccines ----
 INSERT INTO vaccines (name, inventory, manufacturer, description, min_age_months, max_age_months) VALUES
@@ -135,37 +107,37 @@ INSERT INTO vaccination_schedule (scheduled_day, vaccine_id, dose_number, recomm
 ('2025-06-22', 2,  3, 24,  56);
 
 -- ---- workers ----
-INSERT INTO workers (name, lastname, role, mail, curp, address, birth_date, password_hash, nfc_token) VALUES
-('Elena',    'Ruiz Mendoza',     'Enfermero',     'elena.ruiz@vacunas.mx',     'RUME870315MDFZND01', 'Av. Doctor Vértiz 120, CDMX',   '1987-03-15', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMaJOhFbG1KQ3pZv8uAE6Wz.lW', 2001),
-('Carlos',   'Pérez Olvera',     'Administrador', 'c.perez@vacunas.mx',        'PEOC820720HDFRLR02', 'Calle Independencia 55, CDMX',  '1982-07-20', '$2b$12$XKv4d2zrCXWIyle1MIBbDPaz7UuyNBKQiGcH2LR4qAw9vBF7Xb.mX', 2002),
-('Patricia', 'Gómez Salazar',    'Enfermero',     'patricia.gomez@vacunas.mx', 'GOSP900505MDFMLR03', 'Col. Del Valle 300, CDMX',      '1990-05-05', '$2b$12$YLw5e3asDAXJzmf2NJCcEQba8VvzOCLRjHdI3MS5rBw0wCG8Yc.nY', 2003),
-('Miguel',   'Torres Bravo',     'Almacen',       'm.torres@vacunas.mx',       'TOBM850912HDFRRG04', 'Privada Olivos 7, CDMX',        '1985-09-12', '$2b$12$ZMx6f4btEBYKano3OKDdFRcb9WwaPDMSkIeJ4NT6sCx1xDH9Zd.oZ', NULL),
-('Fernanda', 'Lozano Vega',      'Enfermero',     'f.lozano@vacunas.mx',       'LOVF930128MDFZGN05', 'Calle Niños Héroes 88, CDMX',   '1993-01-28', '$2b$12$ANy7g5cuFCZLbop4PLEeFSdc0XxbQENTlJfK5OU7tDy2yEI0Ae.pA', 2004),
-('Rodrigo',  'Ibarra Santana',   'Administrador', 'r.ibarra@vacunas.mx',       'ISAR780603HDFBRG06', 'Av. Taxqueña 430, CDMX',        '1978-06-03', '$2b$12$BOz8h6dvGDAMcpq5QMFfGTed1YycRFOUmKgL6PV8uEz3zFJ1Bf.qB', 2005),
-('Alejandra','Fuentes Mora',     'Enfermero',     'a.fuentes@vacunas.mx',      'FUMA880414MDFNRL07', 'Col. Portales 22, CDMX',        '1988-04-14', '$2b$12$CPa9i7ewHEBNdqr6RNGgHUfe2ZzdSGPVnLhM7QW9vFa4aGK2Cg.rC', 2006),
-('Jose',     'Medina Arroyo',    'Almacen',       'j.medina@vacunas.mx',       'MEAJ911101HDFDRJ08', 'Río Consulado 85, CDMX',        '1991-11-01', '$2b$12$DQb0j8fxIFCOers7SOHhIVgf3AAeTHQWoMiN8RX0wGb5bHL3Dh.sD', NULL),
-('Lucía',    'Castillo Herrera', 'Enfermero',     'l.castillo@vacunas.mx',     'CAHL860717MDFSTR09', 'Av. Revolución 510, CDMX',      '1986-07-17', '$2b$12$ERc1k9gyJGDPfts8TPIiJWhg4BBfUIPXpJoO9SY1xHc6cIM4Ei.tE', 2007),
-('Alberto',  'Soria Dominguez',  'Administrador', 'a.soria@vacunas.mx',        'SODA800225HDFRBL10', 'Calle Cuauhtémoc 140, CDMX',    '1980-02-25', '$2b$12$FSd2l0hzKHEQgut9UQJjKXih5CCgVJQYqKpP0TZ2yId7dJN5Fj.uF', 2008);
+INSERT INTO workers (name, lastname, role, mail, curp, address, birth_date, password_hash) VALUES
+('Elena',    'Ruiz Mendoza',     'Enfermero',     'elena.ruiz@vacunas.mx',     'RUME870315MDFZND01', 'Av. Doctor Vertiz 120, CDMX',   '1987-03-15', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMaJOhFbG1KQ3pZv8uAE6Wz.lW'),
+('Carlos',   'Perez Olvera',     'Administrador', 'c.perez@vacunas.mx',        'PEOC820720HDFRLR02', 'Calle Independencia 55, CDMX',  '1982-07-20', '$2b$12$XKv4d2zrCXWIyle1MIBbDPaz7UuyNBKQiGcH2LR4qAw9vBF7Xb.mX'),
+('Patricia', 'Gomez Salazar',    'Enfermero',     'patricia.gomez@vacunas.mx', 'GOSP900505MDFMLR03', 'Col. Del Valle 300, CDMX',      '1990-05-05', '$2b$12$YLw5e3asDAXJzmf2NJCcEQba8VvzOCLRjHdI3MS5rBw0wCG8Yc.nY'),
+('Miguel',   'Torres Bravo',     'Almacen',       'm.torres@vacunas.mx',       'TOBM850912HDFRRG04', 'Privada Olivos 7, CDMX',        '1985-09-12', '$2b$12$ZMx6f4btEBYKano3OKDdFRcb9WwaPDMSkIeJ4NT6sCx1xDH9Zd.oZ'),
+('Fernanda', 'Lozano Vega',      'Enfermero',     'f.lozano@vacunas.mx',       'LOVF930128MDFZGN05', 'Calle Ninos Heroes 88, CDMX',   '1993-01-28', '$2b$12$ANy7g5cuFCZLbop4PLEeFSdc0XxbQENTlJfK5OU7tDy2yEI0Ae.pA'),
+('Rodrigo',  'Ibarra Santana',   'Administrador', 'r.ibarra@vacunas.mx',       'ISAR780603HDFBRG06', 'Av. Taxquena 430, CDMX',        '1978-06-03', '$2b$12$BOz8h6dvGDAMcpq5QMFfGTed1YycRFOUmKgL6PV8uEz3zFJ1Bf.qB'),
+('Alejandra','Fuentes Mora',     'Enfermero',     'a.fuentes@vacunas.mx',      'FUMA880414MDFNRL07', 'Col. Portales 22, CDMX',        '1988-04-14', '$2b$12$CPa9i7ewHEBNdqr6RNGgHUfe2ZzdSGPVnLhM7QW9vFa4aGK2Cg.rC'),
+('Jose',     'Medina Arroyo',    'Almacen',       'j.medina@vacunas.mx',       'MEAJ911101HDFDRJ08', 'Rio Consulado 85, CDMX',        '1991-11-01', '$2b$12$DQb0j8fxIFCOers7SOHhIVgf3AAeTHQWoMiN8RX0wGb5bHL3Dh.sD'),
+('Lucia',    'Castillo Herrera', 'Enfermero',     'l.castillo@vacunas.mx',     'CAHL860717MDFSTR09', 'Av. Revolucion 510, CDMX',      '1986-07-17', '$2b$12$ERc1k9gyJGDPfts8TPIiJWhg4BBfUIPXpJoO9SY1xHc6cIM4Ei.tE'),
+('Alberto',  'Soria Dominguez',  'Administrador', 'a.soria@vacunas.mx',        'SODA800225HDFRBL10', 'Calle Cuauhtemoc 140, CDMX',    '1980-02-25', '$2b$12$FSd2l0hzKHEQgut9UQJjKXih5CCgVJQYqKpP0TZ2yId7dJN5Fj.uF');
 
 -- ---- vaccinations ----
-INSERT INTO vaccinations (patient_id, vaccine_id, worker_id, dose_number, application_date) VALUES
-(1,  1,  1, 1, '2020-03-16 09:00:00'),
-(1,  2,  1, 1, '2020-03-16 09:05:00'),
-(2,  1,  3, 1, '2021-06-21 10:30:00'),
-(3,  3,  1, 1, '2020-01-10 11:00:00'),
-(3,  3,  5, 2, '2020-03-12 11:00:00'),
-(4,  5,  3, 1, '2022-03-12 08:45:00'),
-(5,  2,  7, 1, '2020-08-23 09:15:00'),
-(5,  3,  7, 1, '2020-10-25 09:15:00'),
-(6,  4,  9, 1, '2022-02-05 10:00:00'),
-(6,  5,  9, 1, '2022-02-05 10:10:00'),
-(7,  7,  1, 1, '2020-04-20 08:00:00'),
-(8,  1,  3, 1, '2022-07-31 09:30:00'),
-(9,  3,  5, 1, '2020-12-16 11:45:00'),
-(10, 6,  7, 1, '2021-08-30 10:20:00'),
-(11, 1,  9, 1, '2023-03-06 08:00:00'),
-(12, 5,  1, 1, '2022-11-22 09:00:00'),
-(13, 2,  3, 1, '2020-05-08 10:30:00'),
-(14, 8,  5, 1, '2022-05-25 11:00:00'),
-(15, 3,  7, 1, '2023-06-12 09:45:00'),
-(1,  3,  9, 1, '2020-05-17 09:00:00');
+INSERT INTO vaccinations (patient_id, vaccine_id, worker_id, dose_number, applied_date) VALUES
+(1,  1,  1, 1, '2020-03-16'),
+(1,  2,  1, 1, '2020-03-16'),
+(2,  1,  3, 1, '2021-06-21'),
+(3,  3,  1, 1, '2020-01-10'),
+(3,  3,  5, 2, '2020-03-12'),
+(4,  5,  3, 1, '2022-03-12'),
+(5,  2,  7, 1, '2020-08-23'),
+(5,  3,  7, 1, '2020-10-25'),
+(6,  4,  9, 1, '2022-02-05'),
+(6,  5,  9, 1, '2022-02-05'),
+(7,  7,  1, 1, '2020-04-20'),
+(8,  1,  3, 1, '2022-07-31'),
+(9,  3,  5, 1, '2020-12-16'),
+(10, 6,  7, 1, '2021-08-30'),
+(11, 1,  9, 1, '2023-03-06'),
+(12, 5,  1, 1, '2022-11-22'),
+(13, 2,  3, 1, '2020-05-08'),
+(14, 8,  5, 1, '2022-05-25'),
+(15, 3,  7, 1, '2023-06-12'),
+(1,  3,  9, 1, '2020-05-17');
