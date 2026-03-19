@@ -97,11 +97,14 @@ button{
     grid-area: content;
     flex:1;
     padding:50px;
+    
 }
 
 .content-info {
     display: grid;
     gap: 15px;
+    background: transparent;
+    box-shadow: none;
 }
 
 .clinic-title{

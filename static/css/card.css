@@ -18,12 +18,15 @@
     margin: 0;
 }
 
+.title{
+    font-weight: 700;
+}
+
 .subtitle{
     color: var(--gray-color);
-    font-size: 15px;
-    margin-top: 5px;
+    font-size: 18px;
     margin-bottom:25px;
-    font-weight:500;
+    font-weight:600;
 }
 
 .search-bar-container.section{

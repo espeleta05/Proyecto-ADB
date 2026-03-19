@@ -4,6 +4,13 @@
 
 {% block content %}
 
+<style>
+.content-info {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+</style>
+
 <p class="date">{{ today }}</p>
 
 <h2 class="title">Panel general</h2>
@@ -62,39 +69,40 @@
 
                 <!-- PATIENT 1 -->
                 {% for p in top_patients %}
-                    <div class="patient-row">
+                <div class="patient-row">
 
+                    <!-- PACIENTE -->
                     <div class="patient-info">
                         <div class="avatar">
-                        <i class="fa-solid fa-user"></i>
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+
+                        <div>
+                            <p>{{ p.first_name }} {{ p.last_name }}</p>
+                            <small>ID: P{{ p.patient_id }}</small>
                         </div>
                     </div>
 
-                    <div>
-                        <p>{{ p.first_name }} {{ p.last_name }}</p>
-                        <small>ID: P{{ p.patient_id }}</small>
-                    </div>
-
-                    </div>
-
+                    <!-- TUTOR -->
                     <div>{{ p.guardian }}</div>
 
+                    <!-- EDAD / SANGRE -->
                     <div>
-                    <p>{{ p.age }} años</p>
-                    <span class="blood">{{ p.blood_type }}</span>
+                        <p>{{ p.age }} años</p>
+                        <span class="blood">{{ p.blood_type }}</span>
                     </div>
 
+                    <!-- ALERGIAS -->
                     <div>{{ p.allergies }}</div>
 
+                    <!-- ESTADO -->
                     <div class="status ok">Al día</div>
 
-                    </div>
+                </div>
                 {% endfor %}
-            </div>
-
-            <p class="patients-count">Mostrando {{ top_patients|length }} de {{ total_patients }} pacientes</p>
-
+            
         </section>
+        <p class="patients-count">Mostrando {{ top_patients|length }} de {{ total_patients }} pacientes</p>
 
 
         <div class="second-section">
