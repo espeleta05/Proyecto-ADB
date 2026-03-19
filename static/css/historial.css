@@ -1,0 +1,98 @@
+
+.avatar i{
+  font-size: 1rem;
+  color: var(--gray-color);
+  background-color: var(--gray-stroke);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.historial-wrapper {
+  padding: 20px;
+}
+
+/* PACIENTES GRID */
+.patients-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.patient-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8f8f8;
+  text-decoration: none;
+  color: black;
+  transition: 0.2s;
+}
+
+.patient-item:hover {
+  background: #eee;
+}
+
+.patient-item.active {
+  background: #e0e0e0;
+}
+
+/* SECCIONES */
+.section {
+  margin-top: 20px;
+}
+
+/* TARJETAS VACUNAS APLICADAS */
+.vaccine-applied {
+  margin-top: 15px;
+  border-radius: 15px;
+  background: #fafafa;
+}
+
+.vaccine-applied .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dose {
+  background: #bbdefb;
+  color: #1565c0;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.observation {
+  display: block;
+  margin-top: 10px;
+  padding: 8px;
+  background: #eee;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* PROXIMAS VACUNAS */
+.next-vaccines {
+  margin-top: 30px;
+}
+
+.next-card {
+  display: flex;
+  justify-content: space-between;
+  background: #d0ecf7;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.next-card .date {
+  font-weight: bold;
+  color: #0277bd;
+}

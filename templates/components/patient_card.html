@@ -1,0 +1,49 @@
+<div class="card">
+    <div class="card-header">
+        <div class="detail-info">
+            <div>
+                <h3>{{ p.full_name }}</h3>
+                <span class="id">ID: P{{ p.patient_id }}</span>
+            </div>
+    
+            <div class="risk low">
+                Riesgo: {{ p.risk }}
+            </div>
+        </div>
+
+        {% if show_delete is not defined or show_delete %}
+            <i class="fa-solid fa-trash"></i>
+        {% endif %}
+    </div>
+    
+    <div class="card-body">
+        <div class="details">
+            <p>
+                <i class="fa-solid fa-calendar-days"></i>
+                Fecha:{{ p.birth_date_fmt }}
+            </p>
+    
+            <p>
+                <i class="fa-solid fa-user"></i>
+                Tutor: {{ p.guardian }}
+            </p>
+    
+            <p>
+                <i class="fa-solid fa-phone"></i>
+                Contacto: {{ p.contact }}
+            </p>
+        </div>
+    
+        <div class="extra">
+            <span class="blood A">
+                <i class="fa-solid fa-droplet"></i>
+                {{ p.blood_type }}
+            </span>
+    
+            <span class="allergy">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {{ p.allergies }}
+            </span>
+        </div>
+    </div>    
+</div>

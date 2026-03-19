@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Vacunas - Sistema Clínico{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vacunas.css') }}">
+
+<div class="content-header">
+    <h2 class="title">Inventario de vacunas</h2>
+
+    <button class="btn-agregar">
+        <i class="fa-solid fa-plus"></i>
+        Agregar vacuna
+    </button>
+</div>
+
+<div class="subtitle">
+    Total de vacunas registradas: {{ total_vaccines }}
+</div>
+
+<div class="search-bar-container section">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" placeholder="Buscar vacuna por nombre o id...">
+</div>
+
+<a href="{{ url_for('esquema_vacunacion') }}" class="esquema">
+    Ver esquema de vacunación
+</a>
+
+<!-- LISTA (MISMA ESTRUCTURA QUE PACIENTES) -->
+<div class="section">
+    {% set mode = 'catalog' %}
+    {% for v in vaccines %}
+        {% include 'components/vaccine_card.html' %}
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <p>No hay vacunas registradas.</p>
+            </div>
+        </div>
+    {% endfor %}
+
+</div>
+
+<script>
+async function createVaccineFromPrompts() {
+    const name = prompt("Nombre de la vacuna:");
+    if (!name) return;
+
+    const inventory = prompt("Inventario inicial:", "0");
+    if (inventory === null) return;
+
+    const manufacturer = prompt("Fabricante (opcional):", "") || null;
+    const description = prompt("Descripcion (opcional):", "") || null;
+
+    const response = await fetch("/register_vaccine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name,
+            inventory,
+            manufacturer,
+            description
+        })
+    });
+
+    if (response.ok) {
+        alert("Vacuna agregada correctamente");
+        location.reload();
+    }
+}
+
+document.querySelectorAll(".btn-agregar").forEach(btn => {
+    btn.addEventListener("click", createVaccineFromPrompts);
+});
+</script>
+
+{% endblock %}

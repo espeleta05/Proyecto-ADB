@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial Médico{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/historial.css') }}">
+
+<div class="historial-wrapper">
+
+    <!-- HEADER -->
+    <div class="content-header">
+        <h2 class="title">Historial médico por paciente</h2>
+    </div>
+
+    <p class="subtitle">Seleccione un paciente para ver su historial médico</p>
+
+    <!-- SEARCH -->
+    <div class="search-bar-container section">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Buscar paciente por nombre o id">
+    </div>
+
+    <!-- LISTA PACIENTES -->
+    <div class="patients-grid">
+        {% for p in patients %}
+        <a href="{{ url_for('historial_paciente', id=p.patient_id) }}"
+           class="patient-item {% if patient and p.patient_id == patient.patient_id %}active{% endif %}">
+
+            <div class="avatar">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <div>
+                <p>{{ p.first_name }} {{ p.last_name }}</p>
+                <p class="id">ID: P{{ p.patient_id }}</p>
+            </div>
+
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if patient %}
+    <div class="section">
+        {% set p = patient %}
+        {% include 'components/patient_card.html' %}
+
+        <!-- HISTORIAL -->
+        <h2 class="title">Historial de vacunación</h2>
+
+        {% set mode = 'application' %}
+        {% for v in applications %}
+            {% include 'components/vaccine_card.html' with context %}
+        {% else %}
+            <p>No hay vacunas registradas.</p>
+        {% endfor %}
+
+    </div>
+
+    <!-- PROXIMAS -->
+    <div class="next-vaccines">
+        <h3>Próximas vacunas</h3>
+
+        {% for v in next_vaccines %}
+        <div class="next-card">
+            <div>
+                <strong>{{ v.name }}</strong>
+                <p>Dosis #{{ v.dose }}</p>
+            </div>
+
+            <div class="date">
+                {{ v.date }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

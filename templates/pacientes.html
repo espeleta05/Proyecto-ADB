@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Pacientes - Sistema Clínico{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
+
+<div class="content-header">
+    <h2 class="title">Gestión de pacientes</h2>
+
+    <button class="btn-agregar">
+        <i class="fa-solid fa-plus"></i>
+        Agregar paciente
+    </button>
+</div>
+
+<div class="subtitle">
+    Total pacientes: {{ total_patients }}
+</div>
+
+<div class="search-bar-container section">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" placeholder="Buscar paciente por nombre o id...">
+</div>
+
+<div class="section">
+
+    {% for p in patients %}
+        {% include 'components/patient_card.html' %}
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <p>No hay pacientes registrados.</p>
+            </div>
+        </div>
+    {% endfor %}
+
+</div>
+
+<script>
+async function createPatientFromPrompts() {
+    const firstName = prompt("Nombre del paciente:");
+    if (!firstName) return;
+
+    const lastName = prompt("Apellido del paciente:");
+    if (!lastName) return;
+
+    const birthDate = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+    if (!birthDate) return;
+
+    const gender = prompt("Genero:", "Masculino");
+    const bloodType = prompt("Tipo de sangre:", "O+");
+    const allergies = prompt("Alergias:", "") || null;
+
+    const response = await fetch("/register_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            birth_date: birthDate,
+            gender: gender,
+            blood_type: bloodType,
+            allergies: allergies
+        })
+    });
+
+    if (response.ok) {
+        alert("Paciente agregado correctamente");
+        location.reload();
+    }
+}
+
+document.querySelectorAll(".btn-agregar").forEach(btn => {
+    btn.addEventListener("click", createPatientFromPrompts);
+});
+</script>
+
+{% endblock %}
