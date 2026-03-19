@@ -24,6 +24,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+def hash_password(password):
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
+
+
+def verify_password(password, hashed):
+    return bcrypt.checkpw(
+        password.encode("utf-8"),
+        hashed.encode("utf-8")
+    )
+
 
 def _age_in_years(birth_date):
     today = date.today()
@@ -65,7 +78,7 @@ def ensure_default_admin():
 # =========================
 
 class Patient(db.Model):
-    __tablename__ = 'patient'
+    __tablename__ = 'patients'
 
     patient_id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(100), nullable=False)
@@ -84,7 +97,7 @@ class Patient(db.Model):
 
 
 class Guardian(db.Model):
-    __tablename__ = 'guardian'
+    __tablename__ = 'guardians'
 
     guardian_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
@@ -109,8 +122,8 @@ class Relations(db.Model):
 
     relation_id = db.Column(db.Integer, primary_key=True)
 
-    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
-    guardian_id = db.Column(db.Integer, db.ForeignKey('guardian.guardian_id'))
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.patient_id'))
+    guardian_id = db.Column(db.Integer, db.ForeignKey('guardians.guardian_id'))
 
 
 class Beacon(db.Model):
@@ -146,43 +159,9 @@ class ScanLog(db.Model):
     source_device = db.Column(db.String(30))
 
 
-class Vaccine(db.Model):
-    __tablename__ = 'vaccines'
-
-    id_vaccine = db.Column(db.Integer, primary_key=True)
-
-    name = db.Column(db.String(100))
-    inventory = db.Column(db.Integer)
-
-    manufacturer = db.Column(db.String(100))
-
-    description = db.Column(db.Text)
-
-    min_age_months = db.Column(db.Integer)
-    max_age_months = db.Column(db.Integer)
-
-
-class VaccinationSchedule(db.Model):
-    __tablename__ = 'vaccination_schedule'
-
-    id_schedule = db.Column(db.Integer, primary_key=True)
-
-    scheduled_day = db.Column(db.Date)
-
-    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
-
-    dose_number = db.Column(db.Integer)
-
-    recommended_age_months = db.Column(db.Integer)
-
-    min_interval_days = db.Column(db.Integer)
-
-
 class Worker(db.Model):
     __tablename__ = 'workers'
-
     worker_id = db.Column(db.Integer, primary_key=True)
-
     name = db.Column(db.String(50))
     lastname = db.Column(db.String(100))
     role = db.Column(db.Enum('Administrador','Almacen','Enfermero'))
@@ -193,21 +172,46 @@ class Worker(db.Model):
     password_hash = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def set_password(self, password):
+        self.password_hash = bcrypt.hashpw(
+            password.encode("utf-8"),
+            bcrypt.gensalt()
+        ).decode("utf-8")
 
-class Vaccination(db.Model):
-    __tablename__ = "vaccinations"
+    def check_password(self, password):
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            self.password_hash.encode("utf-8")
+        )
 
-    vaccination_id = db.Column(db.Integer, primary_key=True)
 
-    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
+class Vaccine(db.Model):
+    __tablename__ = 'vaccines'
+    id_vaccine = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    inventory = db.Column(db.Integer)
+    manufacturer = db.Column(db.String(100))
+    description = db.Column(db.Text)
 
+class VaccinationScheme(db.Model):
+    __tablename__ = 'vaccination_scheme'
+    id_scheme = db.Column(db.Integer, primary_key=True)
     vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
+    dose_number = db.Column(db.String(50), nullable=False)
+    ideal_age_months = db.Column(db.Integer, nullable=False)
+    min_interval_days = db.Column(db.Integer)
 
-    dose_number = db.Column(db.Integer)
 
-    applied_date = db.Column(db.Date)
-
-    worker_id = db.Column(db.Integer, db.ForeignKey("workers.worker_id"))
+class VaccinationRecord(db.Model):
+    __tablename__ = 'vaccination_records'
+    record_id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.patient_id'))
+    vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccine'))
+    worker_id = db.Column(db.Integer, db.ForeignKey('workers.worker_id')) 
+    applied_date = db.Column(db.Date, nullable=False, default=date.today)
+    dose_applied = db.Column(db.String(20))
+    lot_number = db.Column(db.String(50))
+    clinic_location = db.Column(db.String(100))
 
 # =========================
 # RUTA PRINCIPAL
@@ -262,7 +266,7 @@ def dashboard():
 
     total_patients = Patient.query.count()
     total_vaccines = Vaccine.query.count()
-    applications_today = Vaccination.query.filter_by(applied_date=date.today()).count()
+    applications_today = VaccinationRecord.query.filter_by(applied_date=date.today()).count()
 
     top_patients = []
     patient_rows = db.session.query(Patient, Guardian).outerjoin(
@@ -353,6 +357,24 @@ def vacunas_page():
         total_vaccines=len(vaccines)
     )
 
+@app.route('/esquema')
+def esquema_vacunacion():
+    # Verificamos si hay sesión (opcional, según tu sistema)
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    esquema_data = db.session.query(VaccinationScheme, Vaccine).join(
+        Vaccine, VaccinationScheme.vaccine_id == Vaccine.id_vaccine
+    ).order_by(VaccinationScheme.ideal_age_months).all()
+
+    return render_template(
+        'esquemaVacunacion.html', 
+        esquema=esquema_data,
+        name=session.get('name', 'Usuario'),
+        lastname=session.get('lastname', ''),
+        role=session.get('role', 'Personal')
+    )
+
 # =========================
 # REGISTRAR PACIENTE
 # =========================
@@ -438,6 +460,29 @@ def register_vaccine():
         "vaccine_id": vaccine.id_vaccine
     })
 
+@app.route("/register_worker", methods=["POST"])
+def register_worker():
+
+    data = request.json
+
+    hashed_password = hash_password(data["password"])
+
+    new_worker = Worker(
+        name=data["name"],
+        lastname=data["lastname"],
+        role=data["role"],
+        mail=data["mail"],
+        curp=data.get("curp"),
+        address=data.get("address"),
+        birth_date=datetime.strptime(data["birth_date"], "%Y-%m-%d"),
+        password_hash=hashed_password
+    )
+
+    db.session.add(new_worker)
+    db.session.commit()
+
+    return jsonify({"message": "Usuario creado"})
+
 
 # =========================
 # REGISTRAR BEACON
@@ -516,22 +561,25 @@ def _age_in_months(birth_date):
     return max(months, 0)
 
 
-@app.route("/scan_logs/<int:patient_id>", methods=["GET"])
-def scan_logs(patient_id):
+@app.route("/patient_history/<int:patient_id>")
+def patient_history(patient_id):
 
-    logs = ScanLog.query.filter_by(patient_id=patient_id).order_by(ScanLog.scanned_at.desc()).all()
+    vaccinations = VaccinationRecord.query.filter_by(
+        patient_id=patient_id
+    ).order_by(
+        VaccinationRecord.applied_date.desc()
+    ).all()
 
     result = []
-    for log in logs:
+
+    for v in vaccinations:
+
+        vaccine = db.session.get(Vaccine, v.vaccine_id)
+
         result.append({
-            "log_id": log.log_id,
-            "patient_id": log.patient_id,
-            "uuid": log.uuid,
-            "major": log.major,
-            "minor": log.minor,
-            "rssi": log.rssi,
-            "scanned_at": str(log.scanned_at),
-            "source_device": log.source_device
+            "vaccine": vaccine.name,
+            "dose": v.dose_number,
+            "date": str(v.applied_date)
         })
 
     return jsonify(result)
