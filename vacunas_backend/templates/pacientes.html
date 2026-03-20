@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Pacientes</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Montserrat:ital,wght@0,300..800;1,300..800&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- TOP NAVBAR -->
+<div class="main-layout">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="clinic-title">ClínicaNuevoLeón</div>
+
+        <div class="search-bar-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar paciente, vacuna o doctor...">
+        </div>
+
+        
+        <button class="btn-reporte">
+            <i class="fa-solid fa-plus"></i>
+             Generar reporte
+        </button>
+        
+        <div class="profile-circle">
+            <span>RG</span>
+        </div>
+    </div>
+
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <h3 class="menu-title">Principal</h3>
+
+        <nav class="menu">
+
+            <a href="{{ url_for('dashboard') }}" class="menu-item">
+                <i class="fa-solid fa-desktop"></i>                
+                <span>Dashboard</span>
+            </a>
+
+            <div class="menu-item active">
+                <i class="fa-solid fa-users"></i>
+                <span>Pacientes</span>
+            </div>
+
+            <a href="{{ url_for('vacunas_page') }}" class="menu-item">
+                <i class="fa-solid fa-syringe"></i>
+                <span>Vacunas</span>
+            </a>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Historial médico</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Aplicaciones</span>
+            </div>
+
+        </nav>
+
+        <div class="user-info">
+            <div class="profile-small">RG</div>
+            <div>
+                <p class="user-name">{{ name }} {{ lastname }}</p>
+                <p class="user-role">{{role}}</p>
+            </div>
+            <a href="/logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+        <div class="content-info">
+            
+            <div class="content-header">
+                <h2 class="title">Gestión de pacientes</h2>
+                <button class="btn-agregar">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar paciente
+                </button>
+            </div>
+
+            <div class="total">
+                Total pacientes: {{ total_patients }}
+            </div>
+
+            <div class="search-bar-container section">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Buscar paciente por nombre o id...">
+            </div>
+    
+            <!-- PATIENT LIST -->
+            <div class="patients-section">
+                {% for p in patients %}
+                <div class="patient-card">
+                    <div class="card-header">
+                        <div class="patient-info">
+                            <div>
+                                <h3>{{ p.full_name }}</h3>
+                                <span class="patient-id">ID: P{{ p.patient_id }}</span>
+                            </div>
+
+                            <div class="risk low">
+                                Riesgo: {{ p.risk }}
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="details">
+                            <p>
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Fecha de nacimiento: {{ p.birth_date }}
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-user"></i>
+                                Tutor: {{ p.guardian }}
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-phone"></i>
+                                Contacto: {{ p.contact }}
+                            </p>
+                        </div>
+
+                        <div class="extra">
+                            <span class="blood A">
+                                <i class="fa-solid fa-droplet"></i>
+                                Tipo: {{ p.blood_type }}
+                            </span>
+
+                            <span class="allergy">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Alergias: {{ p.allergies }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="patient-card">
+                    <div class="card-body">
+                        <p>No hay pacientes registrados.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<script>
+async function createPatientFromPrompts() {
+    const firstName = prompt("Nombre del paciente:");
+    if (!firstName) return;
+
+    const lastName = prompt("Apellido del paciente:");
+    if (!lastName) return;
+
+    const birthDate = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+    if (!birthDate) return;
+
+    const gender = prompt("Genero (Masculino/Femenino):", "Masculino");
+    if (!gender) return;
+
+    const bloodType = prompt("Tipo de sangre (A+, A-, B+, B-, AB+, AB-, O+, O-):", "O+");
+    const allergies = prompt("Alergias (opcional):", "") || null;
+    const notes = prompt("Notas (opcional):", "") || null;
+
+    const response = await fetch("/register_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            birth_date: birthDate,
+            gender: gender,
+            blood_type: bloodType || "O+",
+            allergies: allergies,
+            notes: notes
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || "No se pudo registrar el paciente");
+        return;
+    }
+
+    alert("Paciente agregado correctamente");
+    window.location.reload();
+}
+
+document.querySelectorAll(".btn-agregar").forEach((button) => {
+    button.addEventListener("click", createPatientFromPrompts);
+});
+</script>
+
+</body>
+</html>
