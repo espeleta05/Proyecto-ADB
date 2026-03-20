@@ -6,6 +6,7 @@
 
 <!-- 1. Mandamos a llamar el CSS del modal -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nuevoPaciente.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
 
 <div class="content-header">
     <h2 class="title">Gestión de pacientes</h2>
@@ -68,6 +69,38 @@ document.getElementById('searchInput').addEventListener('input', function() {
             card.parentNode.insertBefore(card, card.parentNode.firstChild);
         } else {
             card.style.display = 'none';
+        }
+    });
+});
+
+document.querySelectorAll('.delete-patient-btn').forEach(btn => {
+    btn.addEventListener('click', async function () {
+        const patientId = this.dataset.patientId;
+        if (!patientId) return;
+
+        if (!confirm('Esta accion eliminara al paciente y sus registros relacionados. Continuar?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/delete_patient/${patientId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(result.error || 'No se pudo eliminar el paciente');
+                return;
+            }
+
+            const card = document.getElementById(`patient-card-${patientId}`);
+            if (card) card.remove();
+            alert(result.message || 'Paciente eliminado correctamente');
+            window.location.reload();
+        } catch (err) {
+            alert('Error de conexion al eliminar paciente');
+            console.error(err);
         }
     });
 });

@@ -18,11 +18,11 @@
     <!-- SEARCH -->
     <div class="search-bar-container section">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" placeholder="Buscar paciente por nombre o id">
+        <input type="text" id="historialSearchInput" placeholder="Buscar paciente por nombre o id">
     </div>
 
     <!-- LISTA PACIENTES -->
-    <div class="patients-grid">
+    <div class="patients-grid" id="patientsGrid">
         {% for p in patients %}
         <a href="{{ url_for('historial_paciente', id=p.patient_id) }}"
            class="patient-item {% if patient and p.patient_id == patient.patient_id %}active{% endif %}">
@@ -40,9 +40,20 @@
         {% endfor %}
     </div>
 
+    <div id="patientsNoResults" class="section no-results hidden">
+        <p>No se encontraron pacientes con ese criterio.</p>
+    </div>
+
+    {% if not patients %}
+    <div class="section">
+        <p>No hay pacientes registrados para mostrar historial.</p>
+    </div>
+    {% endif %}
+
     {% if patient %}
     <div class="section">
         {% set p = patient %}
+        {% set show_delete = false %}
         {% include 'components/patient_card.html' %}
 
         <a href="{{ url_for('esquema_paciente', id=patient.patient_id) }}" class="btn-esquema">
@@ -54,6 +65,7 @@
         <h2 class="title">Historial de vacunación</h2>
 
         {% set mode = 'application' %}
+        {% set show_delete = false %}
         {% for v in applications %}
             {% include 'components/vaccine_card.html' with context %}
         {% else %}
@@ -83,5 +95,36 @@
     {% endif %}
 
 </div>
+
+<script>
+const historialSearchInput = document.getElementById('historialSearchInput');
+const patientsGrid = document.getElementById('patientsGrid');
+const patientsNoResults = document.getElementById('patientsNoResults');
+
+if (historialSearchInput && patientsGrid) {
+    const patientItems = Array.from(patientsGrid.querySelectorAll('.patient-item'));
+
+    const applyPatientFilter = (value) => {
+        const term = (value || '').toLowerCase().trim();
+        let visibleCount = 0;
+
+        patientItems.forEach((item) => {
+            const fullText = item.textContent.toLowerCase();
+            const isVisible = !term || fullText.includes(term);
+            item.classList.toggle('hidden', !isVisible);
+            if (isVisible) visibleCount += 1;
+        });
+
+        if (patientsNoResults) {
+            const shouldShowNoResults = term.length > 0 && visibleCount === 0;
+            patientsNoResults.classList.toggle('hidden', !shouldShowNoResults);
+        }
+    };
+
+    historialSearchInput.addEventListener('input', (event) => {
+        applyPatientFilter(event.target.value);
+    });
+}
+</script>
 
 {% endblock %}

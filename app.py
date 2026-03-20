@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 import bcrypt
 import os
 from urllib.parse import quote_plus
@@ -25,7 +25,7 @@ if database_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"postgresql+psycopg://{db_user}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
+        f"postgresql+psycopg2://{db_user}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
     )
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -112,7 +112,6 @@ class Guardian(db.Model):
     guardian_id  = db.Column(db.Integer, primary_key=True)
     name         = db.Column(db.String(50))
     lastname     = db.Column(db.String(50))
-    birth_date   = db.Column(db.Date)
     number       = db.Column(db.BigInteger)
     mail         = db.Column(db.String(100))
     address      = db.Column(db.String(200))
@@ -225,11 +224,54 @@ class VaccinationRecord(db.Model):
 
 def _session_vars():
     """Retorna variables de sesión comunes para todos los render_template."""
+    worker_id = session.get("user_id")
+    worker = db.session.get(Worker, worker_id) if worker_id else None
+
+    if worker:
+        first = (worker.name or "").strip()
+        last = (worker.lastname or "").strip()
+        role = (worker.role or "Sin rol").strip()
+
+        # Mantener sesión sincronizada con la tabla workers.
+        session["user_name"] = first
+        session["user_lastname"] = last
+        session["role"] = role
+    else:
+        first = (session.get("user_name") or "").strip()
+        last = (session.get("user_lastname") or "").strip()
+        role = (session.get("role") or "").strip()
+
+    if first or last:
+        initials = ((first[:1] if first else "") + (last[:1] if last else "")).upper()
+    else:
+        initials = "US"
+
     return {
-        "name":     session.get("user_name", ""),
-        "lastname": session.get("user_lastname", ""),
-        "role":     session.get("role", "")
+        "name":     first,
+        "lastname": last,
+        "role":     role,
+        "initials": initials,
     }
+
+
+def _authenticate_worker(identifier, password):
+    """Autentica contra la tabla workers usando mail o nombre de usuario."""
+    identifier = (identifier or "").strip()
+    password = password or ""
+    if not identifier or not password:
+        return None
+
+    worker = Worker.query.filter(
+        or_(
+            func.lower(Worker.mail) == identifier.lower(),
+            func.lower(Worker.name) == identifier.lower(),
+        )
+    ).first()
+
+    if not worker or not worker.password_hash:
+        return None
+
+    return worker if worker.check_password(password) else None
 
 
 def _load_patient_data(id):
@@ -303,21 +345,30 @@ def home():
 def login():
     if request.method == "POST":
         identifier = request.form.get("mail", "").strip()
-        password   = request.form.get("password")
+        password   = request.form.get("password") or ""
+
+        if not identifier or not password:
+            return render_template("login.html", error="Debes ingresar usuario/mail y contraseña")
 
         worker = Worker.query.filter(
-            or_(Worker.mail == identifier, Worker.name == identifier)
+            or_(
+                func.lower(Worker.mail) == identifier.lower(),
+                func.lower(Worker.name) == identifier.lower(),
+            )
         ).first()
 
-        if worker and worker.check_password(password):
-            session["user_id"]       = worker.worker_id
-            session["user_name"]     = worker.name
-            session["user_lastname"] = worker.lastname
-            session["user_mail"]     = worker.mail
-            session["role"]          = worker.role
-            return redirect(url_for("dashboard"))
+        if not worker:
+            return render_template("login.html", error="Usuario o correo no encontrado")
 
-        return render_template("login.html", error="Credenciales incorrectas")
+        if not worker.password_hash or not worker.check_password(password):
+            return render_template("login.html", error="Contraseña incorrecta")
+
+        session["user_id"]       = worker.worker_id
+        session["user_name"]     = worker.name
+        session["user_lastname"] = worker.lastname or ""
+        session["user_mail"]     = worker.mail
+        session["role"]          = worker.role or "Sin rol"
+        return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
@@ -343,19 +394,26 @@ def dashboard():
     total_vaccines     = Vaccine.query.count()
     applications_today = VaccinationRecord.query.filter_by(applied_date=date.today()).count()
 
-    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+    patient_rows = db.session.query(
+        Patient,
+        Guardian.guardian_id,
+        Guardian.name,
+        Guardian.lastname
+    ).outerjoin(
         Relations, Relations.patient_id == Patient.patient_id
     ).outerjoin(
         Guardian, Guardian.guardian_id == Relations.guardian_id
     ).order_by(Patient.created_at.desc()).limit(5).all()
 
     top_patients = []
-    for patient, guardian in patient_rows:
+    for row in patient_rows:
+        patient = row[0]
+        guardian_name = f"{row[2]} {row[3]}" if row[1] else "Sin tutor"
         top_patients.append({
             "patient_id": patient.patient_id,
             "first_name": patient.first_name,
             "last_name":  patient.last_name,
-            "guardian":   f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
+            "guardian":   guardian_name,
             "age":        _age_in_years(patient.birth_date),
             "blood_type": patient.blood_type,
             "allergies":  patient.allergies or "Ninguna"
@@ -384,20 +442,29 @@ def pacientes():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+    patient_rows = db.session.query(
+        Patient,
+        Guardian.guardian_id,
+        Guardian.name,
+        Guardian.lastname,
+        Guardian.number
+    ).outerjoin(
         Relations, Relations.patient_id == Patient.patient_id
     ).outerjoin(
         Guardian, Guardian.guardian_id == Relations.guardian_id
     ).order_by(Patient.created_at.desc()).all()
 
     patients_data = []
-    for patient, guardian in patient_rows:
+    for row in patient_rows:
+        patient = row[0]
+        guardian_name = f"{row[2]} {row[3]}" if row[1] else "Sin tutor"
+        guardian_number = str(row[4]) if row[1] and row[4] else "Sin teléfono"
         patients_data.append({
             "patient_id": patient.patient_id,
             "full_name":  f"{patient.first_name} {patient.last_name}",
             "birth_date": patient.birth_date.strftime("%d/%m/%Y"),
-            "guardian":   f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
-            "contact":    str(guardian.number) if guardian and guardian.number else "Sin teléfono",
+            "guardian":   guardian_name,
+            "contact":    guardian_number,
             "blood_type": patient.blood_type,
             "allergies":  patient.allergies or "Ninguna",
             "risk":       "bajo"
@@ -455,14 +522,22 @@ def historial():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    patients = Patient.query.all()
+    patients = Patient.query.order_by(Patient.created_at.desc(), Patient.patient_id.desc()).all()
+
+    patient = None
+    applications = []
+    next_vaccines = []
+
+    if patients:
+        patient, applications, next_vaccines = _load_patient_data(patients[0].patient_id)
 
     return render_template(
         'historial.html',
         patients=patients,
-        patient=None,
-        applications=[],
-        next_vaccines=[]
+        patient=patient,
+        applications=applications,
+        next_vaccines=next_vaccines,
+        **_session_vars()
     )
 
 
@@ -471,7 +546,7 @@ def historial_paciente(id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    patients = Patient.query.all()
+    patients = Patient.query.order_by(Patient.created_at.desc(), Patient.patient_id.desc()).all()
     patient, applications, next_vaccines = _load_patient_data(id)
 
     return render_template(
@@ -479,7 +554,8 @@ def historial_paciente(id):
         patients=patients,
         patient=patient,
         applications=applications,
-        next_vaccines=next_vaccines
+        next_vaccines=next_vaccines,
+        **_session_vars()
     )
 
 
@@ -742,56 +818,74 @@ def register_patient():
     except ValueError:
         return jsonify({"error": "Formato de fecha inválido (use YYYY-MM-DD)"}), 400
 
-    new_patient = Patient(
-        first_name=data["first_name"],
-        last_name=data["last_name"],
-        birth_date=birth,
-        blood_type=data.get("blood_type", "O+"),
-        gender=data["gender"],
-        nfc_token=data.get("nfc_token"),
-        allergies=data.get("allergies"),
-        notes=data.get("notes")
-    )
+    def _clean_text(value):
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
-    db.session.add(new_patient)
-    db.session.flush()
+    def _clean_phone(value):
+        text = _clean_text(value)
+        if not text:
+            return None
+        digits = ''.join(ch for ch in text if ch.isdigit())
+        return int(digits) if digits else None
 
-    tutor_data   = data.get("tutor", {})
-    new_guardian = None
-
-    if tutor_data.get("name") or tutor_data.get("lastname"):
-        curp = tutor_data.get("curp")
-        if curp:
-            existing = Guardian.query.filter_by(curp=curp).first()
-            new_guardian = existing or Guardian(
-                name=tutor_data.get("name"),
-                lastname=tutor_data.get("lastname"),
-                curp=curp,
-                number=tutor_data.get("number"),
-                mail=tutor_data.get("mail"),
-                address=tutor_data.get("address")
-            )
-            if not existing:
-                db.session.add(new_guardian)
-                db.session.flush()
-        else:
-            new_guardian = Guardian(
-                name=tutor_data.get("name"),
-                lastname=tutor_data.get("lastname"),
-                number=tutor_data.get("number"),
-                mail=tutor_data.get("mail"),
-                address=tutor_data.get("address")
-            )
-            db.session.add(new_guardian)
-            db.session.flush()
-
-        if new_guardian:
-            db.session.add(Relations(
-                patient_id=new_patient.patient_id,
-                guardian_id=new_guardian.guardian_id
-            ))
+    blood_type = _clean_text(data.get("blood_type")) or "O+"
 
     try:
+        new_patient = Patient(
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            birth_date=birth,
+            blood_type=blood_type,
+            gender=data["gender"],
+            nfc_token=_clean_text(data.get("nfc_token")),
+            allergies=_clean_text(data.get("allergies")),
+            notes=_clean_text(data.get("notes"))
+        )
+
+        db.session.add(new_patient)
+        db.session.flush()
+
+        tutor_data = data.get("tutor", {})
+        new_guardian = None
+
+        tutor_name = _clean_text(tutor_data.get("name"))
+        tutor_lastname = _clean_text(tutor_data.get("lastname"))
+        tutor_curp = _clean_text(tutor_data.get("curp"))
+
+        if tutor_name or tutor_lastname:
+            if tutor_curp:
+                existing = Guardian.query.filter_by(curp=tutor_curp).first()
+                new_guardian = existing or Guardian(
+                    name=tutor_name,
+                    lastname=tutor_lastname,
+                    curp=tutor_curp,
+                    number=_clean_phone(tutor_data.get("number")),
+                    mail=_clean_text(tutor_data.get("mail")),
+                    address=_clean_text(tutor_data.get("address"))
+                )
+                if not existing:
+                    db.session.add(new_guardian)
+                    db.session.flush()
+            else:
+                new_guardian = Guardian(
+                    name=tutor_name,
+                    lastname=tutor_lastname,
+                    number=_clean_phone(tutor_data.get("number")),
+                    mail=_clean_text(tutor_data.get("mail")),
+                    address=_clean_text(tutor_data.get("address"))
+                )
+                db.session.add(new_guardian)
+                db.session.flush()
+
+            if new_guardian:
+                db.session.add(Relations(
+                    patient_id=new_patient.patient_id,
+                    guardian_id=new_guardian.guardian_id
+                ))
+
         db.session.commit()
         return jsonify({"message": "Paciente registrado correctamente", "patient_id": new_patient.patient_id})
     except Exception as e:
@@ -1111,12 +1205,9 @@ def check_schedule(patient_id):
 
 @app.route("/worker_login", methods=["POST"])
 def worker_login():
-    data   = request.json
-    worker = Worker.query.filter(
-        or_(Worker.mail == data["mail"], Worker.name == data["mail"])
-    ).first()
-
-    if not worker or not worker.check_password(data["password"]):
+    data = request.json or {}
+    worker = _authenticate_worker(data.get("mail", ""), data.get("password", ""))
+    if not worker:
         return jsonify({"error": "Credenciales incorrectas"}), 401
 
     return jsonify({
@@ -1170,4 +1261,22 @@ if __name__ == "__main__":
         db.create_all()
         ensure_default_admin()
 
-    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    app_host = os.getenv("APP_HOST", "0.0.0.0")
+    app_port = int(os.getenv("APP_PORT", "5000"))
+    app_debug = os.getenv("APP_DEBUG", "0").strip() == "1"
+    use_waitress = os.getenv("USE_WAITRESS", "0").strip() == "1"  # Cambié a 0 para usar Flask dev server
+
+    print(f"\n{'='*60}")
+    print(f"🚀 SERVIDOR INICIANDO")
+    print(f"{'='*60}")
+    print(f"  Local:  http://localhost:{app_port}")
+    print(f"  Red:    http://172.32.216.26:{app_port}")
+    print(f"  Debug:  {app_debug}")
+    print(f"  Waitress: {use_waitress}")
+    print(f"{'='*60}\n")
+
+    if use_waitress:
+        from waitress import serve
+        serve(app, host=app_host, port=app_port)
+    else:
+        app.run(host=app_host, port=app_port, debug=app_debug, use_reloader=False)

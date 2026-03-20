@@ -109,9 +109,6 @@ class Guardian(db.Model):
     guardian_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     lastname = db.Column(db.String(50))
-
-    birth_date = db.Column(db.Date)
-
     number = db.Column(db.BigInteger)
     mail = db.Column(db.String(100))
 
@@ -278,18 +275,25 @@ def dashboard():
     applications_today = VaccinationRecord.query.filter_by(applied_date=date.today()).count()
 
     top_patients = []
-    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+    patient_rows = db.session.query(
+        Patient, 
+        Guardian.guardian_id,
+        Guardian.name,
+        Guardian.lastname
+    ).outerjoin(
         Relations, Relations.patient_id == Patient.patient_id
     ).outerjoin(
         Guardian, Guardian.guardian_id == Relations.guardian_id
     ).order_by(Patient.created_at.desc()).limit(5).all()
 
-    for patient, guardian in patient_rows:
+    for row in patient_rows:
+        patient = row[0]
+        guardian_name = f"{row[2]} {row[3]}" if row[1] else "Sin tutor"
         top_patients.append({
             "patient_id": patient.patient_id,
             "first_name": patient.first_name,
             "last_name": patient.last_name,
-            "guardian": f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
+            "guardian": guardian_name,
             "age": _age_in_years(patient.birth_date),
             "blood_type": patient.blood_type,
             "allergies": patient.allergies or "Ninguna"
@@ -321,20 +325,29 @@ def pacientes():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    patient_rows = db.session.query(Patient, Guardian).outerjoin(
+    patient_rows = db.session.query(
+        Patient,
+        Guardian.guardian_id,
+        Guardian.name,
+        Guardian.lastname,
+        Guardian.number
+    ).outerjoin(
         Relations, Relations.patient_id == Patient.patient_id
     ).outerjoin(
         Guardian, Guardian.guardian_id == Relations.guardian_id
     ).order_by(Patient.created_at.desc()).all()
 
     patients_data = []
-    for patient, guardian in patient_rows:
+    for row in patient_rows:
+        patient = row[0]
+        guardian_name = f"{row[2]} {row[3]}" if row[1] else "Sin tutor"
+        guardian_number = str(row[4]) if row[1] and row[4] else "Sin teléfono"
         patients_data.append({
             "patient_id": patient.patient_id,
             "full_name": f"{patient.first_name} {patient.last_name}",
             "birth_date": patient.birth_date.strftime("%d/%m/%Y"),
-            "guardian": f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor",
-            "contact": str(guardian.number) if guardian and guardian.number else "Sin teléfono",
+            "guardian": guardian_name,
+            "contact": guardian_number,
             "blood_type": patient.blood_type,
             "allergies": patient.allergies or "Ninguna",
             "risk": "bajo"

@@ -48,6 +48,15 @@
   background: #e0e0e0;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.no-results {
+  color: #555;
+  font-weight: 500;
+}
+
 /* SECCIONES */
 .section {
   margin-top: 20px;

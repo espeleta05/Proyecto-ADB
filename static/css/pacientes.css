@@ -3,23 +3,26 @@
     display: flex;
     gap: 10px;
     align-items: center;
-    color: var(--bad-color);
+    color: var(--gray-color);
+    background: var(--gray-background);
+    padding: 8px 10px;
+    border-radius: 10px;
 }
 
 .blood i{
-    color: var(--bad-color);
+    color: var(--gray-color);
 }
 
 .blood.A{
-    background: none;
+    background: var(--gray-background);
 }
 
 .blood.B{
-    background: none;
+    background: var(--gray-background);
 }
 
 .blood.O{
-    background: none;
+    background: var(--gray-background);
 }
 
 

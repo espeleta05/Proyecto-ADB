@@ -77,6 +77,38 @@ document.getElementById('searchInput').addEventListener('input', function() {
     });
 });
 
+document.querySelectorAll('.delete-vaccine-btn').forEach(btn => {
+    btn.addEventListener('click', async function () {
+        const vaccineId = this.dataset.vaccineId;
+        if (!vaccineId) return;
+
+        if (!confirm('Esta accion eliminara la vacuna y sus registros relacionados. Continuar?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/delete_vaccine/${vaccineId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(result.error || 'No se pudo eliminar la vacuna');
+                return;
+            }
+
+            const card = document.getElementById(`vaccine-card-${vaccineId}`);
+            if (card) card.remove();
+            alert(result.message || 'Vacuna eliminada correctamente');
+            window.location.reload();
+        } catch (err) {
+            alert('Error de conexion al eliminar vacuna');
+            console.error(err);
+        }
+    });
+});
+
 // NOTA: Se eliminó la función createVaccineFromPrompts, ahora usa openVaccineModal()
 </script>
 
