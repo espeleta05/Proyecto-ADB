@@ -106,8 +106,10 @@
 }
 
 .extra{
+    display: flex;
+    flex-direction: column;
     margin-top:10px;
     display:flex;
-    gap:25px;
+    gap:0;
     height: fit-content;
 }

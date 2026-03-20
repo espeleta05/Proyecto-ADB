@@ -16,9 +16,8 @@
                 </span>
             </div>
 
-            <!-- TAG -->
             {% if mode == 'application' %}
-                <div class="dose">
+                <div class="badge">
                     Dosis #{{ v.dose }}
                 </div>
             {% else %}
@@ -37,17 +36,19 @@
     <div class="card-body">
 
         {% if mode == 'application' %}
-        <!-- 💉 HISTORIAL -->
         <div class="details">
+            {% if v.patient_name is defined and v.patient_name %}
+            <p>
+                <i class="fa-solid fa-user"></i>
+                {{ v.patient_name }}
+            </p>
+            {% endif %}
+
             <p>
                 <i class="fa-solid fa-calendar-days"></i>
                 Aplicada: {{ v.date }}
             </p>
 
-            <p>
-                <i class="fa-solid fa-user-doctor"></i>
-                {{ v.doctor }}
-            </p>
 
             <p>
                 <i class="fa-solid fa-calendar"></i>
@@ -56,13 +57,17 @@
         </div>
 
         <div class="extra">
-            <span class="observation">
+            <p>
+                <i class="fa-solid fa-user-doctor"></i>
+                {{ v.doctor }}
+            </p>
+            
+            <p class="observation">
                 {{ v.notes or 'Sin observaciones' }}
-            </span>
+            </p>
         </div>
 
         {% else %}
-        <!-- 🧪 CATÁLOGO -->
         <div class="details">
             <p><strong>{{ v.description or 'Sin descripción' }}</strong></p>
 

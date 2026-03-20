@@ -1,237 +1,153 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Esquema de vacunación</title>
-    <link rel="stylesheet" href="esquema-pro.css">
-</head>
+{% extends 'base.html' %}
 
-<body>
+{% block title %}Esquema de Vacunación - {{ patient_name }}{% endblock %}
 
-<div class="layout">
+{% block content %}
 
-    <!-- ===== SIDEBAR ===== -->
-    <aside class="sidebar">
-        <h2 class="logo">ClínicaNuevoLeón</h2>
+<style>
+.content-info {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+</style>
 
-        <p class="section">Principal</p>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/esquemaVacunacion.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/esquemaPaciente.css') }}">
 
-        <div class="menu-item">Dashboard</div>
-        <div class="menu-item">Pacientes</div>
-        <div class="menu-item active">Vacunas</div>
-        <div class="menu-item">Historial médico</div>
-        <div class="menu-item">Aplicaciones</div>
-        <div class="menu-item">Mapa de riesgo</div>
 
-        <div class="user">
-            <div class="avatar">AL</div>
-            <div>
-                <p>Ana López</p>
-                <span>Enfermera</span>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ===== MAIN ===== -->
-    <main class="main">
-
-        <!-- HEADER -->
-        <div class="header">
-            <input class="search" type="text" placeholder="Buscar">
-            <button class="btn-report">Generar reporte +</button>
-        </div>
-
-        <!-- CONTENIDO -->
-        <div class="card">
-
-            <a href="#" class="back">← Regresar</a>
-
-            <h1 class="page-title">Esquema de vacunación</h1>
-            <p class="patient-name">Paciente: Mario Núñez</p>
-
-            <!-- ===== TABLA ===== -->
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Vacuna</th>
-                        <th>Dosis</th>
-                        <th>Fecha aplicada</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr>
-                        <td>Pentavalente</td>
-                        <td>1</td>
-                        <td>6/2/2026</td>
-                        <td class="done">Aplicada</td>
-                    </tr>
-
-                    <tr>
-                        <td>Neumococo</td>
-                        <td>1</td>
-                        <td>6/2/2026</td>
-                        <td class="done">Aplicada</td>
-                    </tr>
-
-                    <tr>
-                        <td>Hepatitis B</td>
-                        <td>1</td>
-                        <td>6/2/2026</td>
-                        <td class="done">Aplicada</td>
-                    </tr>
-
-                    <tr>
-                        <td>Rotavirus</td>
-                        <td>1</td>
-                        <td>-</td>
-                        <td class="pending">Pendiente</td>
-                    </tr>
-
-                    <tr>
-                        <td>Pentavalente</td>
-                        <td>2</td>
-                        <td>-</td>
-                        <td class="pending">Pendiente</td>
-                    </tr>
-
-                    <tr>
-                        <td>Rotavirus</td>
-                        <td>2</td>
-                        <td>-</td>
-                        <td class="pending">Pendiente</td>
-                    </tr>
-
-                    <tr>
-                        <td>Neumococo</td>
-                        <td>2</td>
-                        <td>-</td>
-                        <td class="pending">Pendiente</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- ===== PROGRESO ===== -->
-            <div class="progress-card">
-
-                <div class="progress-header">
-                    <p>Mario Núñez - ID: P002</p>
-                    <span>50%</span>
-                </div>
-
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-
-                <p>4 completadas</p>
-
-                <div class="stats">
-                    <div class="stat green">Vacunas aplicadas: 3</div>
-                    <div class="stat orange">Vacunas pendientes: 6</div>
-                    <div class="stat blue">Dosis programadas: 4</div>
-                </div>
-
-            </div>
-
-            <!-- ===== PRÓXIMAS DOSIS ===== -->
-            <h2>Próximas dosis de vacunas programadas</h2>
-
-            <div class="next-list">
-
-                <div class="next-card">
-                    <div>
-                        <strong>Rotavirus</strong><br>
-                        Dosis #1
-                    </div>
-                    <span>12/2/2026</span>
-                </div>
-
-                <div class="next-card">
-                    <div>
-                        <strong>Pentavalente</strong><br>
-                        Dosis #2
-                    </div>
-                    <span>10/6/2026</span>
-                </div>
-
-                <div class="next-card">
-                    <div>
-                        <strong>Rotavirus</strong><br>
-                        Dosis #2
-                    </div>
-                    <span>10/6/2026</span>
-                </div>
-
-                <div class="next-card">
-                    <div>
-                        <strong>Neumococo</strong><br>
-                        Dosis #2
-                    </div>
-                    <span>10/6/2026</span>
-                </div>
-
-            </div>
-
-            <!-- ===== PENDIENTES ===== -->
-            <h2>Vacunas pendientes (6)</h2>
-
-            <div class="pending-list">
-
-                <div class="pending-card">
-                    <div>
-                        <strong>Rotavirus</strong><br>
-                        Prevención de infecciones
-                    </div>
-                    <span>2 meses - 5 años</span>
-                </div>
-
-                <div class="pending-card">
-                    <div>
-                        <strong>Influenza</strong><br>
-                        Enfermedad influenza
-                    </div>
-                    <span>6 meses en adelante</span>
-                </div>
-
-                <div class="pending-card">
-                    <div>
-                        <strong>SRP</strong><br>
-                        Sarampión, Rubéola y Parotiditis
-                    </div>
-                    <span>6 semanas - 6 meses</span>
-                </div>
-
-                <div class="pending-card">
-                    <div>
-                        <strong>DPT</strong>
-                    </div>
-                    <span>4 años</span>
-                </div>
-
-                <div class="pending-card">
-                    <div>
-                        <strong>OPV</strong><br>
-                        Polio
-                    </div>
-                    <span>5 años</span>
-                </div>
-
-                <div class="pending-card">
-                    <div>
-                        <strong>VPH</strong><br>
-                        Virus del papiloma humano
-                    </div>
-                    <span>11 años</span>
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
+<!-- ── Back + title ── -->
+<div class="scheme-header">
+    <a href="{{ url_for('historial') }}" class="back"><i class="fa-solid fa-arrow-left"></i> Regresar</a>
+    <h2 class="title">Esquema de vacunación</h2>
+    <p class="patient-sub">
+        {{ patient.full_name }} &nbsp;·&nbsp; ID: P{{ patient.patient_id }}
+        &nbsp;·&nbsp; {{ patient.age if patient.age is defined else '' }} años
+    </p>
 </div>
 
-</body>
-</html>
+<!-- ── Vaccination history table ── -->
+<section class="patients">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vacuna</th>
+                    <th>Dosis</th>
+                    <th>Fecha aplicada</th>
+                    <th>Aplicada por</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td><strong>{{ app.name }}</strong></td>
+                    <td>{{ app.dose }}</td>
+                    <td>{{ app.date }}</td>
+                    <td>{{ app.doctor }}</td>
+                    <td><span class="status ok"><i class="fa-solid fa-check"></i> Aplicada</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="empty-state">Sin registros de vacunación aún.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+</section>
+ 
+<!-- ── Summary cards ── -->
+{% set total_applied  = applications | length %}
+{% set total_pending  = next_vaccines | length %}
+{% set total_doses    = total_applied + total_pending %}
+{% set pct = ((total_applied / total_doses * 100) | int) if total_doses > 0 else 0 %}
+ 
+<div class="cards">
+    <div class="dash-card">
+        <i class="fa-solid fa-syringe"></i>
+        <h4>Dosis aplicadas</h4>
+        <p>{{ total_applied }}</p>
+    </div>
+    <div class="dash-card">
+        <i class="fa-regular fa-clock"></i>
+        <h4>Dosis pendientes</h4>
+        <p>{{ total_pending }}</p>
+    </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-calendar-days"></i>
+        <h4>Total programadas</h4>
+        <p>{{ total_doses }}</p>
+    </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-chart-simple"></i>
+        <h4>Progreso</h4>
+        <p>{{ pct }}%</p>
+    </div>
+</div>
+ 
+<!-- ── Progress bar ── -->
+<div class="progress-card">
+    <div class="progress-header">
+        <p>{{ patient.full_name }} — ID: P{{ patient.patient_id }}</p>
+        <span>{{ pct }}%</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="--pct: {{ pct }}%;"></div>
+    </div>
+    <p class="progress-pct">{{ total_applied }} de {{ total_doses }} dosis completadas</p>
+    <div class="stats">
+        <div class="stat green">Aplicadas: {{ total_applied }}</div>
+        <div class="stat orange">Pendientes: {{ total_pending }}</div>
+        <div class="stat blue">Total: {{ total_doses }}</div>
+    </div>
+</div>
+ 
+<!-- ── Bottom cards ── -->
+<div class="second-section">
+ 
+    <!-- Próximas dosis -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2>Próximas dosis programadas</h2>
+            <div class="card-detail">
+                <i class="fa-regular fa-calendar-check"></i>
+            </div>
+        </div>
+ 
+        {% for nv in next_vaccines %}
+        <div class="next-card">
+            <div>
+                <strong>{{ nv.name }}</strong><br>
+                <small style="opacity:.6;">{{ nv.dose }}</small>
+            </div>
+            <span>{{ nv.date }}</span>
+        </div>
+        {% else %}
+        <p class="empty-state">Sin próximas dosis programadas.</p>
+        {% endfor %}
+    </section>
+ 
+    <!-- Vacunas pendientes -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2>Vacunas pendientes</h2>
+            <div class="card-detail">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+        </div>
+ 
+        {% for app in applications if app.next_date %}
+        <div class="pending-card">
+            <div>
+                <strong>{{ app.name }}</strong><br>
+                <small style="opacity:.6;">Siguiente: {{ app.dose }}</small>
+            </div>
+            <span>{{ app.next_date }}</span>
+        </div>
+        {% else %}
+        <p class="empty-state">Sin vacunas pendientes.</p>
+        {% endfor %}
+    </section>
+ 
+</div>
+ 
+{% endblock %}

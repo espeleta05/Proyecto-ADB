@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "bases avanzadas")
+app.secret_key = os.getenv("SECRET_KEY", "cambia_esto_en_produccion_12345")
 
 # DATABASE CONFIG
 db_user     = os.getenv("db_user", "postgres")
@@ -67,11 +67,11 @@ def ensure_default_admin():
     admin = Worker.query.filter(
         or_(Worker.mail == "admin", Worker.name == "admin")
     ).first()
- 
+
     # Si ya existe, no tocar nada (no sobreescribir el password)
     if admin:
         return
- 
+
     # Solo crear si no existe
     admin_user = Worker(
         name="admin",
@@ -388,6 +388,61 @@ def historial():
         next_vaccines=[]
     )
 
+def _load_patient_data(id):
+    """Carga datos del paciente, historial y proximas citas usando funciones SQL."""
+    from flask import abort
+    from sqlalchemy import text
+ 
+    patient = db.session.get(Patient, id)
+    if patient is None:
+        abort(404)
+ 
+    relation = Relations.query.filter_by(patient_id=id).first()
+    guardian = None
+    if relation:
+        guardian = db.session.get(Guardian, relation.guardian_id)
+ 
+    patient.full_name = f"{patient.first_name} {patient.last_name}"
+    patient.guardian  = f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor"
+    patient.contact   = str(guardian.number) if guardian and guardian.number else "Sin teléfono"
+    patient.allergies = patient.allergies or "Ninguna"
+    patient.age       = _age_in_years(patient.birth_date)
+    patient.risk      = "bajo"
+ 
+    # ── Historial usando vacunas_aplicadas_por_paciente() ──
+    rows = db.session.execute(
+        text("SELECT * FROM vacunas_aplicadas_por_paciente(CAST(:pid AS INT))"),
+        {"pid": id}
+    ).fetchall()
+ 
+    applications = []
+    for r in rows:
+        applications.append({
+            "name":      r.nombre_vacuna,
+            "id":        r.id_vacuna,
+            "dose":      r.fecha_aplicacion.strftime('%d/%m/%Y') if r.fecha_aplicacion else "N/A",
+            "date":      r.fecha_aplicacion.strftime('%d/%m/%Y') if r.fecha_aplicacion else "N/A",
+            "doctor":    r.nombre_aplicador or "N/A",
+            "next_date": r.fecha_proxima_dosis.strftime('%d/%m/%Y') if r.fecha_proxima_dosis else None,
+            "notes":     r.observaciones or "Aplicación registrada"
+        })
+ 
+    # ── Próximas citas usando proximas_citas_vacunacion() ──
+    citas = db.session.execute(
+        text("SELECT * FROM proximas_citas_vacunacion(CAST(:pid AS INT))"),
+        {"pid": id}
+    ).fetchall()
+ 
+    next_vaccines = []
+    for c in citas:
+        next_vaccines.append({
+            "name":   c.nombre_vacuna,
+            "dose":   c.proxima_dosis,
+            "date":   c.fecha_cita.strftime('%d/%m/%Y') if c.fecha_cita else "N/A",
+            "estado": c.estado_cita
+        })
+ 
+    return patient, applications, next_vaccines
 
 @app.route('/historial/<int:id>')
 def historial_paciente(id):
@@ -395,59 +450,7 @@ def historial_paciente(id):
         return redirect(url_for("login"))
 
     patients = Patient.query.all()
-
-    patient = db.session.get(Patient, id)
-    if patient is None:
-        from flask import abort
-        abort(404)
-
-    relation = Relations.query.filter_by(patient_id=id).first()
-    guardian = None
-    if relation:
-        guardian = db.session.get(Guardian, relation.guardian_id)
-
-    patient.full_name = f"{patient.first_name} {patient.last_name}"
-    patient.guardian  = f"{guardian.name} {guardian.lastname}" if guardian else "Sin tutor"
-    patient.contact   = str(guardian.number) if guardian and guardian.number else "Sin teléfono"
-    patient.allergies = patient.allergies or "Ninguna"
-    patient.risk      = "bajo"
-
-    records = VaccinationRecord.query.filter_by(patient_id=id).all()
-
-    applications  = []
-    next_vaccines = []
-
-    for r in records:
-        vaccine_name = r.vaccine.name if r.vaccine else "Vacuna desconocida"
-        doctor_name  = f"{r.worker.name} {r.worker.lastname}" if r.worker else "N/A"
-        applied_date = r.applied_date.strftime('%d/%m/%Y') if r.applied_date else "N/A"
-
-        next_date = None
-        scheme = VaccinationScheme.query.filter_by(
-            vaccine_id=r.vaccine_id,
-            dose_number=r.dose_applied
-        ).first()
-
-        if scheme and scheme.min_interval_days:
-            next_dt   = r.applied_date + timedelta(days=scheme.min_interval_days)
-            next_date = next_dt.strftime('%d/%m/%Y')
-
-            if next_dt > date.today():
-                next_vaccines.append({
-                    "name": vaccine_name,
-                    "dose": r.dose_applied,
-                    "date": next_date
-                })
-
-        applications.append({
-            "name":      vaccine_name,
-            "id":        r.vaccine_id,
-            "dose":      r.dose_applied,
-            "date":      applied_date,
-            "doctor":    doctor_name,
-            "next_date": next_date,
-            "notes":     "Aplicación registrada"
-        })
+    patient, applications, next_vaccines = _load_patient_data(id)
 
     return render_template(
         'historial.html',
@@ -457,6 +460,128 @@ def historial_paciente(id):
         next_vaccines=next_vaccines
     )
 
+@app.route('/aplicaciones')
+def aplicaciones():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    # Todos los registros de vacunación con joins a vacuna, worker y paciente
+    records = db.session.query(VaccinationRecord, Vaccine, Worker, Patient).join(
+        Vaccine, VaccinationRecord.vaccine_id == Vaccine.id_vaccine
+    ).outerjoin(
+        Worker, VaccinationRecord.worker_id == Worker.worker_id
+    ).join(
+        Patient, VaccinationRecord.patient_id == Patient.patient_id
+    ).order_by(
+        VaccinationRecord.applied_date.desc(),
+        VaccinationRecord.record_id.desc()
+    ).all()
+ 
+    applications = []
+    for record, vaccine, worker, patient in records:
+        # Calcular próxima dosis según el esquema
+        next_scheme = VaccinationScheme.query.filter_by(
+            vaccine_id=record.vaccine_id
+        ).order_by(
+            VaccinationScheme.ideal_age_months.asc(),
+            VaccinationScheme.id_scheme.asc()
+        ).all()
+ 
+        applied_count = VaccinationRecord.query.filter_by(
+            patient_id=record.patient_id,
+            vaccine_id=record.vaccine_id
+        ).count()
+ 
+        next_date = None
+        if applied_count < len(next_scheme):
+            next_scheme_entry = next_scheme[applied_count]
+            if next_scheme_entry.min_interval_days:
+                next_date = (record.applied_date + timedelta(days=next_scheme_entry.min_interval_days)).strftime('%d/%m/%Y')
+ 
+        doctor_name = f"Dr. {worker.name} {worker.lastname}" if worker else "N/A"
+ 
+        applications.append({
+            "id":           record.record_id,
+            "name":         vaccine.name,
+            "id_vaccine":   record.vaccine_id,
+            "dose":         record.dose_applied or "N/A",
+            "date":         record.applied_date.strftime('%d/%m/%Y') if record.applied_date else "N/A",
+            "doctor":       doctor_name,
+            "next_date":    next_date,
+            "notes":        record.lot_number or None,
+            "patient_id":   record.patient_id,
+            "patient_name": f"{patient.first_name} {patient.last_name}" if patient else "N/A",
+        })
+ 
+    # Stats
+    today_count        = VaccinationRecord.query.filter_by(applied_date=date.today()).count()
+    unique_patients    = db.session.query(VaccinationRecord.patient_id).distinct().count()
+    unique_vaccines    = db.session.query(VaccinationRecord.vaccine_id).distinct().count()
+ 
+    return render_template(
+        'aplicaciones.html',
+        applications=applications,
+        total_applications=len(applications),
+        total_patients_attended=unique_patients,
+        total_unique_vaccines=unique_vaccines,
+        applications_today=today_count,
+        name=session.get('user_name', ''),
+        lastname=session.get('user_lastname', ''),
+        role=session.get('role', '')
+    )
+
+@app.route('/mapa-riesgo')
+def mapa_riesgo():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    from sqlalchemy import func
+ 
+    zone_rows = db.session.query(
+        VaccinationRecord.clinic_location,
+        func.count(VaccinationRecord.record_id).label('cases')
+    ).filter(
+        VaccinationRecord.clinic_location.isnot(None)
+    ).group_by(
+        VaccinationRecord.clinic_location
+    ).order_by(
+        func.count(VaccinationRecord.record_id).desc()
+    ).all()
+ 
+    zones = []
+    high_risk_count   = 0
+    medium_risk_count = 0
+    low_risk_count    = 0
+ 
+    for row in zone_rows:
+        cases = row.cases
+        if cases >= 10:
+            risk = 'high'
+            high_risk_count += 1
+        elif cases >= 4:
+            risk = 'medium'
+            medium_risk_count += 1
+        else:
+            risk = 'low'
+            low_risk_count += 1
+ 
+        zones.append({
+            'name':  row.clinic_location,
+            'cases': cases,
+            'risk':  risk
+        })
+ 
+    return render_template(
+        'mapaRiesgo.html',
+        zones=zones,
+        high_risk_count=high_risk_count,
+        medium_risk_count=medium_risk_count,
+        low_risk_count=low_risk_count,
+        name=session.get('user_name', ''),
+        lastname=session.get('user_lastname', ''),
+        role=session.get('role', '')
+    )
+ 
 
 # =========================
 # REGISTRAR PACIENTE
@@ -825,6 +950,27 @@ def patient_history(patient_id):
 
     return jsonify(result)
 
+
+
+
+@app.route('/esquema_paciente/<int:id>')
+def esquema_paciente(id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    patients = Patient.query.all()
+    patient, applications, next_vaccines = _load_patient_data(id)
+
+    return render_template(
+        'esquemaPaciente.html',
+        patient=patient,
+        patients=patients,
+        applications=applications,
+        next_vaccines=next_vaccines,
+        name=session.get('user_name', ''),
+        lastname=session.get('user_lastname', ''),
+        role=session.get('role', '')
+    )
 
 # =========================
 # START SERVER
