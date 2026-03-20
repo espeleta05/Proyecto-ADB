@@ -4,12 +4,15 @@
 
 {% block content %}
 
+<!-- 1. Mandamos a llamar el CSS del modal de vacunas -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nuevaVacuna.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/vacunas.css') }}">
 
 <div class="content-header">
     <h2 class="title">Inventario de vacunas</h2>
 
-    <button class="btn-agregar">
+    <!-- 2. Botón que abre el modal -->
+    <button class="btn-agregar" onclick="openVaccineModal()">
         <i class="fa-solid fa-plus"></i>
         Agregar vacuna
     </button>
@@ -21,18 +24,20 @@
 
 <div class="search-bar-container section">
     <i class="fa-solid fa-magnifying-glass"></i>
-    <input type="text" placeholder="Buscar vacuna por nombre o id...">
+    <input type="text" id="searchInput" placeholder="Buscar vacuna por nombre o id...">
 </div>
 
-<a href="{{ url_for('esquema_vacunacion') }}" class="btn-esquema">
+<a href="{{ url_for('esquema_vacunacion') }}" class="esquema">
     Ver esquema de vacunación
 </a>
 
-<!-- LISTA (MISMA ESTRUCTURA QUE PACIENTES) -->
-<div class="section">
+<!-- LISTA -->
+<div class="section" id="vaccinesContainer">
     {% set mode = 'catalog' %}
     {% for v in vaccines %}
-        {% include 'components/vaccine_card.html' %}
+        <div id="vaccine-card-{{ v.id_vaccine }}" class="vaccine-card-wrapper">
+            {% include 'components/vaccine_card.html' %}
+        </div>
     {% else %}
         <div class="card">
             <div class="card-body">
@@ -40,40 +45,39 @@
             </div>
         </div>
     {% endfor %}
-
 </div>
 
+<!-- 3. Incluimos el archivo del modal -->
+{% include 'nuevaVacuna.html' %}
+
 <script>
-async function createVaccineFromPrompts() {
-    const name = prompt("Nombre de la vacuna:");
-    if (!name) return;
+// === LÓGICA DE BÚSQUEDA ===
+const container = document.getElementById('vaccinesContainer');
+const originalCards = container ? Array.from(container.querySelectorAll('.vaccine-card-wrapper')) : [];
 
-    const inventory = prompt("Inventario inicial:", "0");
-    if (inventory === null) return;
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
 
-    const manufacturer = prompt("Fabricante (opcional):", "") || null;
-    const description = prompt("Descripcion (opcional):", "") || null;
-
-    const response = await fetch("/register_vaccine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            name,
-            inventory,
-            manufacturer,
-            description
-        })
-    });
-
-    if (response.ok) {
-        alert("Vacuna agregada correctamente");
-        location.reload();
+    if (searchTerm === "") {
+        originalCards.forEach(card => card.style.display = 'block');
+        return;
     }
-}
 
-document.querySelectorAll(".btn-agregar").forEach(btn => {
-    btn.addEventListener("click", createVaccineFromPrompts);
+    originalCards.forEach(card => {
+        const vaccineId = card.id.replace('vaccine-card-', '');
+        const nameElement = card.querySelector('.card-header h3');
+        const vaccineName = nameElement ? nameElement.innerText.toLowerCase() : '';
+
+        if (vaccineId === searchTerm || vaccineName.includes(searchTerm)) {
+            card.style.display = 'block';
+            card.parentNode.insertBefore(card, card.parentNode.firstChild);
+        } else {
+            card.style.display = 'none';
+        }
+    });
 });
+
+// NOTA: Se eliminó la función createVaccineFromPrompts, ahora usa openVaccineModal()
 </script>
 
 {% endblock %}
