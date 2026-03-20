@@ -4,11 +4,55 @@
 
 {% block content %}
 
+<!-- 1. Mandamos a llamar los CSS de los modales -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nuevoPaciente.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nuevaVacuna.css') }}">
+
 <style>
-.content-info {
-    background-color: transparent !important;
-    box-shadow: none !important;
-}
+    /* Ajustes visuales para el Dashboard */
+    .content-info {
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* == CORRECCIÓN 1: Botón Agregar Vacuna igual al de Paciente == */
+    #btn-add-vaccine-dashboard {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background-color: #E8ABCE; /* Color rosa */
+        color: #4B1535;           /* Color texto oscuro */
+        padding: 12px 20px;       /* Mismo relleno */
+        border-radius: 10px;      /* Mismo borde */
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        border: none;
+        transition: 0.2s;
+    }
+
+    #btn-add-vaccine-dashboard:hover {
+        background-color: #d99ab8; /* Hover suave */
+    }
+
+    /* == CORRECCIÓN 2: Juntar las tarjetas de vacunas y mapa == */
+    .second-section {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 20px; /* Espacio reducido entre tarjetas (antes era mayor por defecto) */
+        margin-top: 30px;
+    }
+
+    .second-section .section-card {
+        flex: 1; /* Que ocupen el mismo ancho */
+        min-width: 0; /* Evita desbordamiento */
+    }
+    
+    /* Ajuste extra para el header de vacunas en dashboard */
+    .second-section .section-header {
+        align-items: center; /* Centrar verticalmente título y botón */
+    }
 </style>
 
 <p class="date">{{ today }}</p>
@@ -24,226 +68,141 @@
         <p>{{ total_patients }}</p>
     </div>
 
-            <div class="dash-card">
-                <i class="fa-solid fa-syringe"></i>
-                <h4>Vacunas en stock</h4>
-                <p>{{ total_vaccines }} tipos</p>
-            </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-syringe"></i>
+        <h4>Vacunas en stock</h4>
+        <p>{{ total_vaccines }} tipos</p>
+    </div>
 
-            <div class="dash-card">
-                <i class="fa-regular fa-calendar-check"></i>
-                <h4>Aplicaciones hoy</h4>
-                <p>{{ applications_today }}</p>
-            </div>
+    <div class="dash-card">
+        <i class="fa-regular fa-calendar-check"></i>
+        <h4>Aplicaciones hoy</h4>
+        <p>{{ applications_today }}</p>
+    </div>
 
-            <div class="dash-card">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <h4>Pacientes en riesgo</h4>
-                <p>N/A</p>
-            </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <h4>Pacientes en riesgo</h4>
+        <p>N/A</p>
+    </div>
 
 </div>
 
-        <!-- PACIENTES -->
-        <section class="patients">
+<!-- PACIENTES -->
+<section class="patients">
 
-            <div class="section-header">
-                <h2>Gestión de pacientes</h2>
+    <div class="section-header">
+        <h2>Gestión de pacientes</h2>
 
-                <button class="btn-agregar" >
-                    <i class="fa-solid fa-plus"></i>
-                    Agregar paciente
-                </button>
+        <!-- Botón Paciente (Ya tenía el estilo .btn-agregar correcto) -->
+        <button class="btn-agregar" onclick="openPatientModal()">
+            <i class="fa-solid fa-plus"></i>
+            Agregar paciente
+        </button>
+    </div>
+
+    <div class="patients-table">
+
+        <div class="table-header">
+            <span>PACIENTE</span>
+            <span>TUTOR</span>
+            <span>EDAD/SANGRE</span>
+            <span>ALERGIAS</span>
+            <span>ESTADO</span>
+        </div>
+
+        {% for p in top_patients %}
+        <div class="patient-row">
+
+            <!-- PACIENTE -->
+            <div class="patient-info">
+                <div class="avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <div>
+                    <p>{{ p.first_name }} {{ p.last_name }}</p>
+                    <small>ID: P{{ p.patient_id }}</small>
+                </div>
             </div>
 
-            <div class="patients-table">
+            <!-- TUTOR -->
+            <div>{{ p.guardian }}</div>
 
-                <div class="table-header">
-                    <span>PACIENTE</span>
-                    <span>TUTOR</span>
-                    <span>EDAD/SANGRE</span>
-                    <span>ALERGIAS</span>
-                    <span>ESTADO</span>
-                </div>
+            <!-- EDAD / SANGRE -->
+            <div>
+                <p>{{ p.age }} años</p>
+                <span class="blood">{{ p.blood_type }}</span>
+            </div>
 
+            <!-- ALERGIAS -->
+            <div>{{ p.allergies }}</div>
 
-                <!-- PATIENT 1 -->
-                {% for p in top_patients %}
-                <div class="patient-row">
+            <!-- ESTADO -->
+            <div class="status ok">Al día</div>
 
-                    <!-- PACIENTE -->
-                    <div class="patient-info">
-                        <div class="avatar">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-
-                        <div>
-                            <p>{{ p.first_name }} {{ p.last_name }}</p>
-                            <small>ID: P{{ p.patient_id }}</small>
-                        </div>
-                    </div>
-
-                    <!-- TUTOR -->
-                    <div>{{ p.guardian }}</div>
-
-                    <!-- EDAD / SANGRE -->
-                    <div>
-                        <p>{{ p.age }} años</p>
-                        <span class="blood">{{ p.blood_type }}</span>
-                    </div>
-
-                    <!-- ALERGIAS -->
-                    <div>{{ p.allergies }}</div>
-
-                    <!-- ESTADO -->
-                    <div class="status ok">Al día</div>
-
-                </div>
-                {% endfor %}
-            
-        </section>
-        <p class="patients-count">Mostrando {{ top_patients|length }} de {{ total_patients }} pacientes</p>
-
-
-        <div class="second-section">
-
-            <section class="section-card">
-                <div class="section-header">
-                    <h2>Inventario de vacunas</h2>
-                    <div class="card-detail" id="btn-add-vaccine-dashboard">
-                        <strong>Agregar vacuna</strong>
-                        <i class="fa-solid fa-plus"></i>
-                    </div>
-                </div>
-    
-                {% for v in dashboard_vaccines %}
-                <div class="vaccine-item">
-                    <div>
-                        <h4>{{ v.name }}</h4>
-                        <small>{{ v.manufacturer or 'Fabricante no definido' }}</small>
-                    </div>
-    
-                    <div class="stock">
-                        <p>{{ v.inventory or 0 }} dosis</p>
-                        <small class="high">Stock</small>
-                    </div>
-                </div>
-                {% endfor %}
-    
-            </section>
-    
-            <section class="section-card map">
-                <div class="section-header">
-                    <h2>Mapa de pacientes en riesgo</h2>
-                    <div class="card-detail map">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <strong>Zonas en riesgo</strong>
-                    </div>
-                </div>
-
-                <div class="risk-patients">
-                    <div class="card-detail high-risk">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        2 pacientes en alto riesgo
-                    </div>
-
-                    <div class="card-detail mid-risk">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        1 paciente en medio riesgo
-                    </div>
-                </div>
-
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d57721.90674671802!2d-100.06210255327815!3d25.283393290552432!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x867d2cf1bcb7c1b1%3A0xe44fe0da3ea4c389!2s67350%20Cdad.%20de%20Allende%2C%20N.L.!5e0!3m2!1ses!2smx!4v1773602186939!5m2!1ses!2smx" width="fit-content" height="400" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            </section>
         </div>
+        {% endfor %}
     
-<script>
-async function createPatientFromPrompts() {
-    const firstName = prompt("Nombre del paciente:");
-    if (!firstName) return;
+</section>
+<p class="patients-count">Mostrando {{ top_patients|length }} de {{ total_patients }} pacientes</p>
 
-    const lastName = prompt("Apellido del paciente:");
-    if (!lastName) return;
+<div class="second-section">
 
-    const birthDate = prompt("Fecha de nacimiento (YYYY-MM-DD):");
-    if (!birthDate) return;
+    <section class="section-card">
+        <div class="section-header">
+            <h2>Inventario de vacunas</h2>
+            
+            <!-- Botón Vacuna modificado para verse rosa -->
+            <div id="btn-add-vaccine-dashboard" onclick="openVaccineModal()">
+                <i class="fa-solid fa-plus"></i>
+                Agregar vacuna
+            </div>
+        </div>
 
-    const gender = prompt("Genero (Masculino/Femenino):", "Masculino");
-    if (!gender) return;
+        {% for v in dashboard_vaccines %}
+        <div class="vaccine-item">
+            <div>
+                <h4>{{ v.name }}</h4>
+                <small>{{ v.manufacturer or 'Fabricante no definido' }}</small>
+            </div>
 
-    const bloodType = prompt("Tipo de sangre (A+, A-, B+, B-, AB+, AB-, O+, O-):", "O+");
-    const allergies = prompt("Alergias (opcional):", "") || null;
-    const notes = prompt("Notas (opcional):", "") || null;
+            <div class="stock">
+                <p>{{ v.inventory or 0 }} dosis</p>
+                <small class="high">Stock</small>
+            </div>
+        </div>
+        {% endfor %}
 
-    const response = await fetch("/register_patient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            birth_date: birthDate,
-            gender: gender,
-            blood_type: bloodType || "O+",
-            allergies: allergies,
-            notes: notes
-        })
-    });
+    </section>
 
-    const data = await response.json();
-    if (!response.ok) {
-        alert(data.error || "No se pudo registrar el paciente");
-        return;
-    }
+    <section class="section-card map">
+        <div class="section-header">
+            <h2>Mapa de pacientes en riesgo</h2>
+            <div class="card-detail map">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <strong>Zonas en riesgo</strong>
+            </div>
+        </div>
 
-    alert("Paciente agregado correctamente");
-    window.location.reload();
-}
+        <div class="risk-patients">
+            <div class="card-detail high-risk">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                2 pacientes en alto riesgo
+            </div>
 
-async function createVaccineFromPrompts() {
-    const name = prompt("Nombre de la vacuna:");
-    if (!name) return;
+            <div class="card-detail mid-risk">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                1 paciente en medio riesgo
+            </div>
+        </div>
 
-    const inventory = prompt("Inventario inicial:", "0");
-    if (inventory === null) return;
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d57721.90674671802!2d-100.06210255327815!3d25.283393290552432!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x867d2cf1bcb7c1b1%3A0xe44fe0da3ea4c389!2s67350%20Cdad.%20de%20Allende%2C%20N.L.!5e0!3m2!1ses!2smx!4v1773602186939!5m2!1ses!2smx" width="100%" height="350" style="border:0; border-radius: 10px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </section>
+</div>
 
-    const manufacturer = prompt("Fabricante (opcional):", "") || null;
-    const description = prompt("Descripcion (opcional):", "") || null;
-    const minAgeMonths = prompt("Edad minima en meses (opcional):", "");
-    if (minAgeMonths === null) return;
-    const maxAgeMonths = prompt("Edad maxima en meses (opcional):", "");
-    if (maxAgeMonths === null) return;
-
-    const response = await fetch("/register_vaccine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            name: name,
-            inventory: inventory,
-            manufacturer: manufacturer,
-            description: description,
-            min_age_months: minAgeMonths,
-            max_age_months: maxAgeMonths
-        })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        alert(data.error || "No se pudo registrar la vacuna");
-        return;
-    }
-
-    alert("Vacuna agregada correctamente");
-    window.location.reload();
-}
-
-document.querySelectorAll(".btn-agregar").forEach((button) => {
-    button.addEventListener("click", createPatientFromPrompts);
-});
-
-const addVaccineDashboardButton = document.getElementById("btn-add-vaccine-dashboard");
-if (addVaccineDashboardButton) {
-    addVaccineDashboardButton.addEventListener("click", createVaccineFromPrompts);
-}
-</script>
+<!-- Incluimos los archivos HTML de los modales -->
+{% include 'nuevoPaciente.html' %}
+{% include 'nuevaVacuna.html' %}
 
 {% endblock %}
