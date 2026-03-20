@@ -34,6 +34,11 @@
             <span>Mapa de riesgo</span>
         </a>
 
+        <a href="{{ url_for('personal') }}" class="menu-item {% if request.endpoint=='personal' %}active{% endif %}">
+            <i class="fa-solid fa-user-doctor"></i>
+            <span>Personal</span>
+        </a>
+
     </nav>
 
     <div class="user-info">

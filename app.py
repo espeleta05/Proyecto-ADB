@@ -582,6 +582,31 @@ def mapa_riesgo():
         role=session.get('role', '')
     )
  
+@app.route('/personal')
+def personal():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    workers = Worker.query.order_by(Worker.role.asc(), Worker.name.asc()).all()
+ 
+    workers_data = []
+    for w in workers:
+        workers_data.append({
+            'worker_id': w.worker_id,
+            'name':      w.name,
+            'lastname':  w.lastname or '',
+            'role':      w.role or 'Sin rol',
+            'mail':      w.mail,
+        })
+ 
+    return render_template(
+        'personal.html',
+        workers=workers_data,
+        total_workers=len(workers_data),
+        name=session.get('user_name', ''),
+        lastname=session.get('user_lastname', ''),
+        role=session.get('role', '')
+    )
 
 # =========================
 # REGISTRAR PACIENTE
