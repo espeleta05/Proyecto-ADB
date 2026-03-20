@@ -608,6 +608,73 @@ def personal():
         role=session.get('role', '')
     )
 
+
+@app.route('/personal/agregar', methods=['GET', 'POST'])
+def add_user():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    if request.method == 'POST':
+        name             = request.form.get('name', '').strip()
+        lastname         = request.form.get('lastname', '').strip()
+        birth_date_str   = request.form.get('birth_date', '').strip()
+        role             = request.form.get('role', '').strip()
+        curp             = request.form.get('curp', '').strip() or None
+        mail             = request.form.get('mail', '').strip()
+        address          = request.form.get('address', '').strip() or None
+        password         = request.form.get('password', '')
+        password_confirm = request.form.get('password_confirm', '')
+ 
+        # Validaciones básicas
+        if not all([name, lastname, birth_date_str, role, mail, password]):
+            return render_template('add_user.html',
+                error='Por favor completa todos los campos obligatorios.',
+                form=request.form)
+ 
+        if password != password_confirm:
+            return render_template('add_user.html',
+                error='Las contraseñas no coinciden.',
+                form=request.form)
+ 
+        if Worker.query.filter_by(mail=mail).first():
+            return render_template('add_user.html',
+                error='Ya existe un usuario con ese email o nombre de usuario.',
+                form=request.form)
+ 
+        try:
+            birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return render_template('add_user.html',
+                error='Fecha de nacimiento inválida.',
+                form=request.form)
+ 
+        new_worker = Worker(
+            name=name,
+            lastname=lastname,
+            birth_date=birth_date,
+            role=role,
+            curp=curp,
+            mail=mail,
+            address=address,
+            password_hash=bcrypt.hashpw(
+                password.encode('utf-8'), bcrypt.gensalt()
+            ).decode('utf-8')
+        )
+ 
+        db.session.add(new_worker)
+        db.session.commit()
+ 
+        return redirect(url_for('personal'))
+ 
+    return render_template(
+        'add_user.html',
+        form={},
+        error=None,
+        name=session.get('user_name', ''),
+        lastname=session.get('user_lastname', ''),
+        role=session.get('role', '')
+    )
+
 # =========================
 # REGISTRAR PACIENTE
 # =========================
@@ -693,26 +760,6 @@ def register_vaccine():
 # =========================
 # REGISTRAR WORKER
 # =========================
-
-@app.route("/register_worker", methods=["POST"])
-def register_worker():
-    data = request.json or {}
-
-    new_worker = Worker(
-        name=data["name"],
-        lastname=data["lastname"],
-        role=data["role"],
-        mail=data["mail"],
-        curp=data.get("curp"),
-        address=data.get("address"),
-        birth_date=datetime.strptime(data["birth_date"], "%Y-%m-%d").date(),
-        password_hash=hash_password(data["password"])
-    )
-
-    db.session.add(new_worker)
-    db.session.commit()
-
-    return jsonify({"message": "Usuario creado"})
 
 
 # =========================
