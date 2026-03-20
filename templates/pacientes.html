@@ -4,12 +4,14 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
+<!-- 1. Mandamos a llamar el CSS del modal -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nuevoPaciente.css') }}">
 
 <div class="content-header">
     <h2 class="title">Gestión de pacientes</h2>
 
-    <button class="btn-agregar">
+    <!-- 2. Botón que abre el modal (usamos onclick="openPatientModal()") -->
+    <button class="btn-agregar" onclick="openPatientModal()">
         <i class="fa-solid fa-plus"></i>
         Agregar paciente
     </button>
@@ -21,13 +23,15 @@
 
 <div class="search-bar-container section">
     <i class="fa-solid fa-magnifying-glass"></i>
-    <input type="text" placeholder="Buscar paciente por nombre o id...">
+    <input type="text" id="searchInput" placeholder="Buscar paciente por nombre o id...">
 </div>
 
-<div class="section">
+<div class="section" id="patientsContainer">
 
     {% for p in patients %}
-        {% include 'components/patient_card.html' %}
+        <div id="patient-card-{{ p.patient_id }}" class="patient-card-wrapper">
+            {% include 'components/patient_card.html' %}
+        </div>
     {% else %}
         <div class="card">
             <div class="card-body">
@@ -38,42 +42,34 @@
 
 </div>
 
+<!-- 3. Incluimos el archivo del modal aquí (es como si pegáramos el código del modal aquí) -->
+{% include 'nuevoPaciente.html' %}
+
 <script>
-async function createPatientFromPrompts() {
-    const firstName = prompt("Nombre del paciente:");
-    if (!firstName) return;
+// Script de búsqueda (sin cambios)
+const container = document.getElementById('patientsContainer');
+const originalCards = container ? Array.from(container.querySelectorAll('.patient-card-wrapper')) : [];
 
-    const lastName = prompt("Apellido del paciente:");
-    if (!lastName) return;
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
 
-    const birthDate = prompt("Fecha de nacimiento (YYYY-MM-DD):");
-    if (!birthDate) return;
-
-    const gender = prompt("Genero:", "Masculino");
-    const bloodType = prompt("Tipo de sangre:", "O+");
-    const allergies = prompt("Alergias:", "") || null;
-
-    const response = await fetch("/register_patient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            birth_date: birthDate,
-            gender: gender,
-            blood_type: bloodType,
-            allergies: allergies
-        })
-    });
-
-    if (response.ok) {
-        alert("Paciente agregado correctamente");
-        location.reload();
+    if (searchTerm === "") {
+        originalCards.forEach(card => card.style.display = 'block');
+        return;
     }
-}
 
-document.querySelectorAll(".btn-agregar").forEach(btn => {
-    btn.addEventListener("click", createPatientFromPrompts);
+    originalCards.forEach(card => {
+        const patientId = card.id.replace('patient-card-', '');
+        const nameElement = card.querySelector('.card-header h3');
+        const patientName = nameElement ? nameElement.innerText.toLowerCase() : '';
+
+        if (patientId === searchTerm || patientName.includes(searchTerm)) {
+            card.style.display = 'block';
+            card.parentNode.insertBefore(card, card.parentNode.firstChild);
+        } else {
+            card.style.display = 'none';
+        }
+    });
 });
 </script>
 
