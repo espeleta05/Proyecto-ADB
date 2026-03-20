@@ -1,0 +1,224 @@
+/* ===== RESET ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #F2F2F2;
+}
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 260px;
+  background: white;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: bold;
+  color: #6B007C;
+}
+
+.section {
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.menu-item {
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 8px;
+  color: #636363;
+  cursor: pointer;
+}
+
+.menu-item.active {
+  background: #EFD3E6;
+  color: #4B1535;
+}
+
+/* USER */
+.user {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  background: #008CA4;
+  color: white;
+  border-radius: 50%;
+  padding: 10px;
+}
+
+/* ===== MAIN ===== */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search {
+  width: 300px;
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+  background: #ECE6F0;
+}
+
+.btn-report {
+  background: #E8ABCE;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 15px;
+}
+
+/* ===== CARD ===== */
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  margin-top: 20px;
+}
+
+/* TITLES */
+.page-title {
+  text-align: center;
+  color: #6B007C;
+  font-size: 32px;
+}
+
+.patient-name {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* BACK */
+.back {
+  color: gray;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* ===== TABLE ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table th, .table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.done {
+  color: green;
+}
+
+.pending {
+  color: orange;
+}
+
+/* ===== PROGRESS ===== */
+.progress-card {
+  margin-top: 30px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #ddd;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.progress-fill {
+  width: 50%;
+  height: 100%;
+  background: #0073A4;
+  border-radius: 10px;
+}
+
+/* STATS */
+.stats {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stat {
+  flex: 1;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.green {
+  background: #CFFFC0;
+}
+
+.orange {
+  background: #FFE0B2;
+}
+
+.blue {
+  background: #B3E5FC;
+}
+
+/* ===== NEXT DOSES ===== */
+.next-list {
+  margin-top: 20px;
+}
+
+.next-card {
+  background: #B3E5FC;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ===== PENDING ===== */
+.pending-list {
+  margin-top: 20px;
+}
+
+.pending-card {
+  background: #FFE0B2;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
