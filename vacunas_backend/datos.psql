@@ -1,4 +1,4 @@
--- datos para PostgreSQL (usar con esquemaBD.psql)
+git pu-- datos para PostgreSQL (usar con esquemaBD.psql)
 
 BEGIN;
 
