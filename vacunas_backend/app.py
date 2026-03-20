@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from sqlalchemy import or_
 import bcrypt
 import os
+from urllib.parse import quote_plus
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -13,13 +14,19 @@ app = Flask(__name__)
 app.secret_key = "super_secret_key"
 
 # DATABASE CONFIG
-db_user = os.getenv("db_user", "root")
+db_user = os.getenv("db_user", "postgres")
 db_password = os.getenv("db_password", "")
 db_host = os.getenv("db_host", "localhost")
+db_port = os.getenv("db_port", "5432")
 db_name = os.getenv("db_name", "vacunas")
-db_driver = os.getenv("db_driver", "mysqlconnector")
+database_url = os.getenv("DATABASE_URL")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+{db_driver}://{db_user}:{db_password}@{db_host}/{db_name}"
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        f"postgresql+psycopg2://{db_user}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
+    )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -85,10 +92,10 @@ class Patient(db.Model):
     last_name = db.Column(db.String(100), nullable=False)
     birth_date = db.Column(db.Date, nullable=False)
 
-    blood_type = db.Column(db.Enum('A+','A-','B+','B-','AB+','AB-','O+','O-'), nullable=False)
-    gender = db.Column(db.Enum('Masculino','Femenino'), nullable=False)
+    blood_type = db.Column(db.String(3), nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
 
-    nfc_token = db.Column(db.Integer, unique=True)
+    nfc_token = db.Column(db.String(50), unique=True)
 
     allergies = db.Column(db.Text)
     notes = db.Column(db.Text)
@@ -136,9 +143,9 @@ class Beacon(db.Model):
     minor = db.Column(db.Integer)
 
     lugar = db.Column(db.String(100))
-    estado = db.Column(db.Enum('Online','Offline'))
+    estado = db.Column(db.String(10))
 
-    patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'))
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.patient_id'))
 
 
 class ScanLog(db.Model):
@@ -146,7 +153,7 @@ class ScanLog(db.Model):
 
     log_id = db.Column(db.Integer, primary_key=True)
 
-    patient_id = db.Column(db.Integer, db.ForeignKey("patient.patient_id"))
+    patient_id = db.Column(db.Integer, db.ForeignKey("patients.patient_id"))
 
     uuid = db.Column(db.String(36))
     major = db.Column(db.Integer)
@@ -164,7 +171,7 @@ class Worker(db.Model):
     worker_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
     lastname = db.Column(db.String(100))
-    role = db.Column(db.Enum('Administrador','Almacen','Enfermero'))
+    role = db.Column(db.String(20))
     mail = db.Column(db.String(100), unique=True)
     curp = db.Column(db.String(18))
     address = db.Column(db.String(250))
@@ -192,6 +199,8 @@ class Vaccine(db.Model):
     inventory = db.Column(db.Integer)
     manufacturer = db.Column(db.String(100))
     description = db.Column(db.Text)
+    min_age_months = db.Column(db.Integer)
+    max_age_months = db.Column(db.Integer)
 
 class VaccinationScheme(db.Model):
     __tablename__ = 'vaccination_scheme'
@@ -561,30 +570,6 @@ def _age_in_months(birth_date):
     return max(months, 0)
 
 
-@app.route("/patient_history/<int:patient_id>")
-def patient_history(patient_id):
-
-    vaccinations = VaccinationRecord.query.filter_by(
-        patient_id=patient_id
-    ).order_by(
-        VaccinationRecord.applied_date.desc()
-    ).all()
-
-    result = []
-
-    for v in vaccinations:
-
-        vaccine = db.session.get(Vaccine, v.vaccine_id)
-
-        result.append({
-            "vaccine": vaccine.name,
-            "dose": v.dose_number,
-            "date": str(v.applied_date)
-        })
-
-    return jsonify(result)
-
-
 @app.route("/check_schedule/<int:patient_id>", methods=["GET"])
 def check_schedule(patient_id):
 
@@ -592,9 +577,10 @@ def check_schedule(patient_id):
     if not patient:
         return jsonify({"error": "Paciente no encontrado"}), 404
 
-    schedules = VaccinationSchedule.query.order_by(
-        VaccinationSchedule.vaccine_id.asc(),
-        VaccinationSchedule.dose_number.asc()
+    schedules = VaccinationScheme.query.order_by(
+        VaccinationScheme.vaccine_id.asc(),
+        VaccinationScheme.ideal_age_months.asc(),
+        VaccinationScheme.id_scheme.asc()
     ).all()
 
     schedule_by_vaccine = {}
@@ -607,12 +593,12 @@ def check_schedule(patient_id):
         if not vaccine:
             continue
 
-        applied = Vaccination.query.filter_by(
+        applied = VaccinationRecord.query.filter_by(
             patient_id=patient_id,
             vaccine_id=vaccine_id
-        ).order_by(Vaccination.dose_number.asc()).all()
+        ).order_by(VaccinationRecord.applied_date.asc(), VaccinationRecord.record_id.asc()).all()
 
-        applied_numbers = {v.dose_number for v in applied}
+        applied_numbers = {v.dose_applied for v in applied}
         required_numbers = [s.dose_number for s in vaccine_schedule]
         missing_numbers = [n for n in required_numbers if n not in applied_numbers]
 
@@ -654,20 +640,22 @@ def apply_vaccine():
     if vaccine.inventory is not None and vaccine.inventory <= 0:
         return jsonify({"error": "No hay inventario disponible"}), 400
 
-    applied = Vaccination.query.filter_by(
+    applied = VaccinationRecord.query.filter_by(
         patient_id=patient_id,
         vaccine_id=vaccine_id
-    ).order_by(Vaccination.dose_number.asc()).all()
+    ).order_by(VaccinationRecord.applied_date.asc(), VaccinationRecord.record_id.asc()).all()
 
-    next_dose = len(applied) + 1
+    schedules = VaccinationScheme.query.filter_by(vaccine_id=vaccine_id).order_by(
+        VaccinationScheme.ideal_age_months.asc(),
+        VaccinationScheme.id_scheme.asc()
+    ).all()
 
-    schedule = VaccinationSchedule.query.filter_by(
-        vaccine_id=vaccine_id,
-        dose_number=next_dose
-    ).first()
+    next_index = len(applied)
 
-    if not schedule:
+    if next_index >= len(schedules):
         return jsonify({"error": "No hay dosis pendiente para esta vacuna"}), 400
+
+    schedule = schedules[next_index]
 
     age_months = _age_in_months(patient.birth_date)
     if vaccine.min_age_months is not None and age_months < vaccine.min_age_months:
@@ -688,10 +676,10 @@ def apply_vaccine():
     if vaccine.inventory is not None:
         vaccine.inventory -= 1
 
-    new_vaccination = Vaccination(
+    new_vaccination = VaccinationRecord(
         patient_id=patient_id,
         vaccine_id=vaccine_id,
-        dose_number=next_dose,
+        dose_applied=schedule.dose_number,
         applied_date=date.today(),
         worker_id=worker_id
     )
@@ -701,8 +689,8 @@ def apply_vaccine():
 
     return jsonify({
         "message": "Vacuna aplicada correctamente",
-        "vaccination_id": new_vaccination.vaccination_id,
-        "dose_number": next_dose,
+        "vaccination_id": new_vaccination.record_id,
+        "dose_number": schedule.dose_number,
         "inventory_left": vaccine.inventory
     })
 
@@ -769,10 +757,10 @@ def get_vaccines():
 @app.route("/patient_history/<int:patient_id>")
 def patient_history(patient_id):
 
-    vaccinations = Vaccination.query.filter_by(
+    vaccinations = VaccinationRecord.query.filter_by(
         patient_id=patient_id
     ).order_by(
-        Vaccination.applied_date.desc()
+        VaccinationRecord.applied_date.desc(), VaccinationRecord.record_id.desc()
     ).all()
 
     result = []
@@ -783,7 +771,7 @@ def patient_history(patient_id):
 
         result.append({
             "vaccine": vaccine.name,
-            "dose": v.dose_number,
+            "dose": v.dose_applied,
             "date": str(v.applied_date)
         })
 
