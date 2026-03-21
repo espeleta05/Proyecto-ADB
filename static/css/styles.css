@@ -46,6 +46,21 @@ button{
     border-radius:10px;
     cursor:pointer;
 }
+
+.btn-agregar{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--button-color);
+    color: var(--secondary-color);
+    font-size: 15px;
+    font-weight: 600;
+    border:none;
+    padding:12px 20px;
+    border-radius:10px;
+    cursor:pointer;
+}
     
 /* MAIN LAYOUT */
     
@@ -87,7 +102,6 @@ button{
     background:white;
     border-right:1px solid var(--gray-stroke);
     padding-top:100px;
-    padding-left:20px;
     display:flex;
     flex-direction:column;
 }
@@ -171,9 +185,13 @@ button{
     flex-direction:column;
     margin-top: 30px;
     margin-bottom: 30px;
+    padding-left:20px;
     gap:5px;
 }
     
+.menu-title{
+    padding-left: 15px;
+}
 .menu-item{
     display:flex;
     align-items:center;
@@ -204,6 +222,7 @@ button{
     align-items:center;
     height: fit-content;
     padding-top: 30px;
+    margin: 12px;
     border-top: 1px solid var(--gray-stroke);
     gap:15px;
 }
