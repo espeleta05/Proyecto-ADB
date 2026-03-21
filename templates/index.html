@@ -100,14 +100,14 @@
         <div class="table-header">
             <span>PACIENTE</span>
             <span>TUTOR</span>
-            <span>EDAD/SANGRE</span>
+            <span>EDAD</span>
+            <span>SANGRE</span>
             <span>ALERGIAS</span>
             <span>ESTADO</span>
         </div>
 
         {% for p in top_patients %}
         <div class="patient-row">
-
             <!-- PACIENTE -->
             <div class="patient-info">
                 <div class="avatar">
@@ -116,7 +116,7 @@
 
                 <div>
                     <p>{{ p.first_name }} {{ p.last_name }}</p>
-                    <small>ID: P{{ p.patient_id }}</small>
+                    <small class="id">ID: P{{ p.patient_id }}</small>
                 </div>
             </div>
 
@@ -124,7 +124,10 @@
 
             <div>
                 <p>{{ p.age }} años</p>
-                <span class="blood">{{ p.blood_type }}</span>
+            </div>
+
+            <div>
+                <span class="blood A">{{ p.blood_type }}</span>
             </div>
 
             <div>{{ p.allergies }}</div>

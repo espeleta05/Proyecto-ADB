@@ -3,6 +3,9 @@
   margin: 20px 0;
 }
 
+.card-body{
+  align-items: flex-start;
+}
 
 .avatar i{
   font-size: 1rem;
@@ -34,7 +37,7 @@
   gap: 10px;
   padding: 12px;
   border-radius: 10px;
-  background: #f8f8f8;
+  border: var(--gray-color) solid 1px;
   text-decoration: none;
   color: black;
   transition: 0.2s;
@@ -76,7 +79,6 @@
 
 .observation {
   display: block;
-  margin-top: 10px;
   padding: 8px;
   background: #eee;
   border-radius: 8px;
@@ -121,4 +123,48 @@
 .next-card .date {
   font-weight: bold;
   color: #0277bd;
+}
+
+.extra{
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+}
+
+.risk{
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+}
+
+.risk.low{
+  background:var(--good-background);
+  color:var(--good-color);
+}
+
+.risk.high{
+  background:var(--bad-background);
+  color:var(--bad-color);
+}
+
+.risk.mid{
+  background:var(--medium-background);
+  color:var(--medium-color);
+}
+
+/* ===== TAGS ===== */
+.blood{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: var(--bad-color);
+}
+
+.blood i{
+    color: var(--bad-color);
+}
+
+.blood.A{
+    background: none;
 }

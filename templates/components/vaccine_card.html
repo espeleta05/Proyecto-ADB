@@ -17,8 +17,8 @@
             </div>
 
             {% if mode == 'application' %}
-                <div class="badge">
-                    Dosis #{{ v.dose }}
+                <div class="dose">
+                    {{ v.dose }} dosis
                 </div>
             {% else %}
                 <div class="tag activa">
@@ -40,7 +40,7 @@
             {% if v.patient_name is defined and v.patient_name %}
             <p>
                 <i class="fa-solid fa-user"></i>
-                {{ v.patient_name }}
+                Paciente: {{ v.patient_name }}
             </p>
             {% endif %}
 

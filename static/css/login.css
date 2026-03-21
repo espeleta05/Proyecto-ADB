@@ -2,6 +2,7 @@
 
 .login-container{
     width:30%;
+    overflow: hidden;
     margin: 40px;
     display:flex;
     flex-direction:column;
