@@ -852,25 +852,32 @@ def api_reportes_publicos_resumen():
         'min_group': min_group,
     }
 
-    kpis_row = db.session.execute(
-        text("SELECT * FROM sp_public_report_kpis(:from_date, :to_date, :min_group)"),
-        params,
-    ).mappings().first()
+    try:
+        kpis_row = db.session.execute(
+            text("SELECT * FROM sp_public_report_kpis(:from_date, :to_date, :min_group)"),
+            params,
+        ).mappings().first()
 
-    monthly_rows = db.session.execute(
-        text("SELECT * FROM sp_public_report_monthly(:from_date, :to_date, :min_group)"),
-        params,
-    ).mappings().all()
+        monthly_rows = db.session.execute(
+            text("SELECT * FROM sp_public_report_monthly(:from_date, :to_date, :min_group)"),
+            params,
+        ).mappings().all()
 
-    vaccine_rows = db.session.execute(
-        text("SELECT * FROM sp_public_report_vaccine_progress(:from_date, :to_date, :min_group)"),
-        params,
-    ).mappings().all()
+        vaccine_rows = db.session.execute(
+            text("SELECT * FROM sp_public_report_vaccine_progress(:from_date, :to_date, :min_group)"),
+            params,
+        ).mappings().all()
 
-    zone_rows = db.session.execute(
-        text("SELECT * FROM sp_public_report_zone_risk(:from_date, :to_date, :min_group)"),
-        params,
-    ).mappings().all()
+        zone_rows = db.session.execute(
+            text("SELECT * FROM sp_public_report_zone_risk(:from_date, :to_date, :min_group)"),
+            params,
+        ).mappings().all()
+    except Exception as ex:
+        db.session.rollback()
+        return jsonify({
+            'error': 'No se pudo generar el reporte. Probablemente faltan funciones SP en la base local. Ejecuta esquema.sql.',
+            'detail': str(ex)
+        }), 500
 
     return jsonify({
         'filters': {
