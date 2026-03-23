@@ -749,6 +749,116 @@ def _serialize_rows(rows):
     return output
 
 
+def _fallback_public_report_data(from_date, to_date, min_group):
+    """Genera reporte agregado sin SP, usando queries SQLAlchemy como respaldo."""
+    base_filter = [
+        VaccinationRecord.applied_date >= from_date,
+        VaccinationRecord.applied_date <= to_date,
+    ]
+
+    total_doses_applied = VaccinationRecord.query.filter(*base_filter).count()
+    target_population = Patient.query.count()
+    reached_population = db.session.query(
+        func.count(func.distinct(VaccinationRecord.patient_id))
+    ).filter(*base_filter).scalar() or 0
+
+    coverage_percent = 0.0
+    if target_population > 0:
+        coverage_percent = round((reached_population / target_population) * 100, 2)
+
+    monthly_raw = db.session.query(
+        func.date_trunc('month', VaccinationRecord.applied_date).label('period_start'),
+        func.count(VaccinationRecord.record_id).label('doses_applied'),
+        func.count(func.distinct(VaccinationRecord.patient_id)).label('unique_patients'),
+    ).filter(
+        *base_filter
+    ).group_by(
+        func.date_trunc('month', VaccinationRecord.applied_date)
+    ).order_by(
+        func.date_trunc('month', VaccinationRecord.applied_date)
+    ).all()
+
+    monthly_rows = []
+    for r in monthly_raw:
+        period_start = r.period_start.date() if hasattr(r.period_start, 'date') else r.period_start
+        monthly_rows.append({
+            'period_start': period_start,
+            'period_label': period_start.strftime('%Y-%m') if period_start else '',
+            'doses_applied': int(r.doses_applied or 0),
+            'unique_patients': int(r.unique_patients or 0),
+        })
+
+    vaccine_raw = db.session.query(
+        Vaccine.name.label('vaccine_name'),
+        func.count(VaccinationRecord.record_id).label('doses_applied'),
+        func.count(func.distinct(VaccinationRecord.patient_id)).label('unique_patients'),
+    ).join(
+        Vaccine, Vaccine.id_vaccine == VaccinationRecord.vaccine_id
+    ).filter(
+        *base_filter
+    ).group_by(
+        Vaccine.name
+    ).order_by(
+        func.count(VaccinationRecord.record_id).desc()
+    ).limit(8).all()
+
+    vaccines_rows = []
+    for r in vaccine_raw:
+        doses = int(r.doses_applied or 0)
+        share = round((doses / total_doses_applied) * 100, 2) if total_doses_applied else 0.0
+        vaccines_rows.append({
+            'vaccine_name': r.vaccine_name,
+            'doses_applied': doses,
+            'unique_patients': int(r.unique_patients or 0),
+            'share_percent': share,
+        })
+
+    zone_raw = db.session.query(
+        VaccinationRecord.clinic_location.label('zone_name'),
+        func.count(VaccinationRecord.record_id).label('doses_applied'),
+        func.count(func.distinct(VaccinationRecord.patient_id)).label('unique_patients'),
+    ).filter(
+        *base_filter,
+        VaccinationRecord.clinic_location.isnot(None),
+        VaccinationRecord.clinic_location != ''
+    ).group_by(
+        VaccinationRecord.clinic_location
+    ).having(
+        func.count(func.distinct(VaccinationRecord.patient_id)) >= min_group
+    ).order_by(
+        func.count(VaccinationRecord.record_id).desc()
+    ).all()
+
+    zones_rows = []
+    for r in zone_raw:
+        doses = int(r.doses_applied or 0)
+        if doses >= 40:
+            risk_level, risk_label = 'high', 'Alto'
+        elif doses >= 20:
+            risk_level, risk_label = 'medium', 'Medio'
+        else:
+            risk_level, risk_label = 'low', 'Bajo'
+
+        zones_rows.append({
+            'zone_name': r.zone_name,
+            'doses_applied': doses,
+            'unique_patients': int(r.unique_patients or 0),
+            'risk_level': risk_level,
+            'risk_label': risk_label,
+        })
+
+    kpis = {
+        'total_doses_applied': int(total_doses_applied),
+        'target_population': int(target_population),
+        'reached_population': int(reached_population),
+        'coverage_percent': coverage_percent,
+        'avg_delay_days': 0.0,
+        'active_zones': len(zones_rows),
+    }
+
+    return kpis, monthly_rows, vaccines_rows, zones_rows
+
+
 @app.route('/reportes-publicos')
 def reportes_publicos():
     if 'user_id' not in session:
@@ -874,10 +984,25 @@ def api_reportes_publicos_resumen():
         ).mappings().all()
     except Exception as ex:
         db.session.rollback()
+        kpis, monthly_rows, vaccine_rows, zone_rows = _fallback_public_report_data(
+            from_date=from_date,
+            to_date=to_date,
+            min_group=min_group,
+        )
+
         return jsonify({
-            'error': 'No se pudo generar el reporte. Probablemente faltan funciones SP en la base local. Ejecuta esquema.sql.',
-            'detail': str(ex)
-        }), 500
+            'filters': {
+                'from': from_date.isoformat(),
+                'to': to_date.isoformat(),
+                'min_group': min_group,
+            },
+            'kpis': {k: _json_ready(v) for k, v in (kpis or {}).items()},
+            'monthly': _serialize_rows(monthly_rows),
+            'vaccines': _serialize_rows(vaccine_rows),
+            'zones': _serialize_rows(zone_rows),
+            'warning': 'Se uso modo de respaldo sin SP en la base local.',
+            'detail': str(ex),
+        }), 200
 
     return jsonify({
         'filters': {
