@@ -1,14 +1,11 @@
-<!-- Fondo oscuro del modal -->
 <div class="modal-overlay" id="vaccineModal">
     <div class="modal-container">
         
-        <!-- Encabezado -->
         <div class="modal-header">
             <h3 class="modal-title">Nueva Vacuna</h3>
             <button class="modal-close-btn" onclick="closeVaccineModal()">&times;</button>
         </div>
 
-        <!-- Formulario -->
         <form id="formNewVaccine" onsubmit="submitNewVaccine(event)">
             
             <div class="form-section">
@@ -51,7 +48,6 @@
                 </div>
             </div>
 
-            <!-- Footer -->
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeVaccineModal()">Cancelar</button>
                 <button type="submit" class="btn-save">Guardar vacuna</button>
@@ -79,7 +75,6 @@
     async function submitNewVaccine(e) {
         e.preventDefault();
 
-        // Helper para convertir campos vacíos a null
         const val = (id) => document.getElementById(id).value || null;
 
         const data = {

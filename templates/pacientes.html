@@ -4,14 +4,12 @@
 
 {% block content %}
 
-<!-- 1. Mandamos a llamar el CSS del modal -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nuevoPaciente.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pacientes.css') }}">
 
 <div class="content-header">
     <h2 class="title">Gestión de pacientes</h2>
 
-    <!-- 2. Botón que abre el modal (usamos onclick="openPatientModal()") -->
     <button class="btn-agregar" onclick="openPatientModal()">
         <i class="fa-solid fa-plus"></i>
         Agregar paciente
@@ -43,7 +41,6 @@
 
 </div>
 
-<!-- 3. Incluimos el archivo del modal aquí (es como si pegáramos el código del modal aquí) -->
 {% include 'nuevoPaciente.html' %}
 
 <script>

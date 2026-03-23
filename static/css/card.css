@@ -67,7 +67,7 @@
     align-items: first baseline;
 }
 
-.details p{
+.card-body p{
     display: flex;
     gap: 10px;
     align-items: center;
@@ -107,9 +107,7 @@
 
 .extra{
     display: flex;
+    gap: 10px;
     flex-direction: column;
-    margin-top:10px;
-    display:flex;
-    gap:0;
     height: fit-content;
 }

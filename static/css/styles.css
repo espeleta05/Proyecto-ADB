@@ -46,6 +46,21 @@ button{
     border-radius:10px;
     cursor:pointer;
 }
+
+.btn-agregar{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--button-color);
+    color: var(--secondary-color);
+    font-size: 15px;
+    font-weight: 600;
+    border:none;
+    padding:12px 20px;
+    border-radius:10px;
+    cursor:pointer;
+}
     
 /* MAIN LAYOUT */
     
@@ -87,7 +102,6 @@ button{
     background:white;
     border-right:1px solid var(--gray-stroke);
     padding-top:100px;
-    padding-left:20px;
     display:flex;
     flex-direction:column;
 }
@@ -169,11 +183,15 @@ button{
 .menu{
     display:flex;
     flex-direction:column;
-    margin-top: 30px;
-    margin-bottom: 30px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding-left:20px;
     gap:5px;
 }
     
+.menu-title{
+    padding-left: 15px;
+}
 .menu-item{
     display:flex;
     align-items:center;
@@ -204,6 +222,7 @@ button{
     align-items:center;
     height: fit-content;
     padding-top: 30px;
+    margin: 12px;
     border-top: 1px solid var(--gray-stroke);
     gap:15px;
 }
@@ -317,7 +336,7 @@ button{
     
 .table-header{
     display:grid;
-    grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr;
+    grid-template-columns: 0.8fr 0.8fr 0.5fr 0.5fr 0.5fr 0.5fr;
     background:#F9F9F9;
     padding:15px;
     font-weight:700;
@@ -326,8 +345,9 @@ button{
     
 .patient-row{
     display:grid;
-    grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr;
+    grid-template-columns:0.8fr 0.8fr 0.5fr 0.5fr 0.5fr 0.5fr;
     padding:15px;
+    gap: 10px;
     border-bottom:1px solid rgba(99,99,99,0.2);
     align-items:center;
 }
@@ -349,6 +369,11 @@ button{
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.id{
+    color: var(--gray-color);
+    font-weight: 600;
 }
     
 .blood.A{
@@ -378,7 +403,7 @@ button{
     /* STATUS */
     
     .status{
-    padding:6px 14px;
+    padding:6px 10px;
     border-radius:20px;
     font-size:14px;
     text-align:center;

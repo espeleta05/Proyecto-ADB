@@ -799,6 +799,110 @@ def add_user():
         **_session_vars()
     )
 
+# =========================
+# REGISTRAR APLICACIÓN (FORM)
+# =========================
+ 
+@app.route('/aplicaciones/registrar', methods=['GET', 'POST'])
+def agregar_aplicacion():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+ 
+    patients = Patient.query.order_by(Patient.first_name.asc()).all()
+    vaccines = Vaccine.query.order_by(Vaccine.name.asc()).all()
+    workers  = Worker.query.order_by(Worker.name.asc()).all()
+    today    = date.today().strftime('%Y-%m-%d')
+ 
+    if request.method == 'POST':
+        patient_id      = request.form.get('patient_id', '').strip()
+        vaccine_id      = request.form.get('vaccine_id', '').strip()
+        worker_id       = request.form.get('worker_id', '').strip() or session.get('user_id')
+        applied_date_str = request.form.get('applied_date', '').strip()
+        lot_number      = request.form.get('lot_number', '').strip() or None
+        clinic_location = request.form.get('clinic_location', '').strip() or None
+ 
+        def render_error(msg):
+            return render_template('add_aplicacion.html',
+                error=msg,
+                form=request.form,
+                patients=patients,
+                vaccines=vaccines,
+                workers=workers,
+                today=today,
+                **_session_vars()
+            )
+ 
+        if not patient_id or not vaccine_id or not applied_date_str:
+            return render_error('Paciente, vacuna y fecha son obligatorios.')
+ 
+        try:
+            applied_date = datetime.strptime(applied_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return render_error('Fecha de aplicación inválida.')
+ 
+        patient = db.session.get(Patient, int(patient_id))
+        if not patient:
+            return render_error('Paciente no encontrado.')
+ 
+        vaccine = db.session.get(Vaccine, int(vaccine_id))
+        if not vaccine:
+            return render_error('Vacuna no encontrada.')
+ 
+        if vaccine.inventory is not None and vaccine.inventory <= 0:
+            return render_error(f'No hay inventario disponible para {vaccine.name}.')
+ 
+        # Determinar qué dosis corresponde según el esquema
+        applied_count = VaccinationRecord.query.filter_by(
+            patient_id=int(patient_id),
+            vaccine_id=int(vaccine_id)
+        ).count()
+ 
+        schedules = VaccinationScheme.query.filter_by(
+            vaccine_id=int(vaccine_id)
+        ).order_by(
+            VaccinationScheme.ideal_age_months.asc(),
+            VaccinationScheme.id_scheme.asc()
+        ).all()
+ 
+        if applied_count >= len(schedules):
+            return render_error(f'El paciente ya completó todas las dosis programadas de {vaccine.name}.')
+ 
+        dose_number = schedules[applied_count].dose_number
+ 
+        # Reducir inventario
+        if vaccine.inventory is not None:
+            vaccine.inventory -= 1
+ 
+        new_record = VaccinationRecord(
+            patient_id=int(patient_id),
+            vaccine_id=int(vaccine_id),
+            worker_id=int(worker_id) if worker_id else None,
+            applied_date=applied_date,
+            dose_applied=dose_number,
+            lot_number=lot_number,
+            clinic_location=clinic_location
+        )
+ 
+        try:
+            db.session.add(new_record)
+            db.session.commit()
+            return redirect(url_for('aplicaciones'))
+        except Exception as e:
+            db.session.rollback()
+            return render_error(f'Error al guardar: {str(e)}')
+ 
+    return render_template(
+        'agregarAplicacion.html',
+        form={},
+        error=None,
+        patients=patients,
+        vaccines=vaccines,
+        workers=workers,
+        today=today,
+        **_session_vars()
+    )
+
+
 
 # =========================
 # REGISTRAR PACIENTE
@@ -930,32 +1034,6 @@ def register_vaccine():
     db.session.commit()
 
     return jsonify({"message": "Vacuna registrada", "vaccine_id": vaccine.id_vaccine})
-
-
-# =========================
-# REGISTRAR WORKER (API)
-# =========================
-
-@app.route("/register_worker", methods=["POST"])
-def register_worker():
-    data = request.json or {}
-
-    new_worker = Worker(
-        name=data["name"],
-        lastname=data["lastname"],
-        role=data["role"],
-        mail=data["mail"],
-        curp=data.get("curp"),
-        address=data.get("address"),
-        birth_date=datetime.strptime(data["birth_date"], "%Y-%m-%d").date(),
-        password_hash=hash_password(data["password"])
-    )
-
-    db.session.add(new_worker)
-    db.session.commit()
-
-    return jsonify({"message": "Usuario creado"})
-
 
 # =========================
 # ELIMINAR PACIENTE
@@ -1253,7 +1331,7 @@ def patient_history(patient_id):
 
 
 # =========================
-# START SERVER
+# Start server
 # =========================
 
 if __name__ == "__main__":

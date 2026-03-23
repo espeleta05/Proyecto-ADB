@@ -4,14 +4,8 @@
 
 {% block content %}
 
-<style>
-    .content-info {
-        background-color: transparent !important;
-        box-shadow: none !important;
-    }
-    </style>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/add_user.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/form.css') }}">
 
 <!-- HEADER -->
 <div class="content-header">
@@ -20,8 +14,8 @@
     </a>
 </div>
 
-<div class="user-form-container">
-    <div class="user-form-card">
+<div class="container">
+    <div class="card">
 
         <h2 class="form-title">Agregar usuario</h2>
 
@@ -34,7 +28,7 @@
 
         <h3 class="section-title">Datos personales</h3>
 
-        <form class="user-form" method="POST" action="{{ url_for('add_user') }}">
+        <form class="form" method="POST" action="{{ url_for('add_user') }}">
 
             <div class="row">
                 <div class="input-group">

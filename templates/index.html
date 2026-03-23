@@ -4,26 +4,23 @@
 
 {% block content %}
 
-<!-- 1. Mandamos a llamar los CSS de los modales -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nuevoPaciente.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nuevaVacuna.css') }}">
 
 <style>
-    /* Ajustes visuales para el Dashboard */
     .content-info {
         background-color: transparent !important;
         box-shadow: none !important;
     }
 
-    /* == CORRECCIÓN 1: Botón Agregar Vacuna igual al de Paciente == */
     #btn-add-vaccine-dashboard {
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        background-color: #E8ABCE; /* Color rosa */
-        color: #4B1535;           /* Color texto oscuro */
-        padding: 12px 20px;       /* Mismo relleno */
-        border-radius: 10px;      /* Mismo borde */
+        background-color: #E8ABCE; 
+        color: #4B1535;          
+        padding: 12px 20px;       
+        border-radius: 10px;
         font-weight: 600;
         font-size: 15px;
         cursor: pointer;
@@ -32,26 +29,24 @@
     }
 
     #btn-add-vaccine-dashboard:hover {
-        background-color: #d99ab8; /* Hover suave */
+        background-color: #d99ab8;
     }
 
-    /* == CORRECCIÓN 2: Juntar las tarjetas de vacunas y mapa == */
     .second-section {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
-        gap: 20px; /* Espacio reducido entre tarjetas (antes era mayor por defecto) */
+        gap: 20px;
         margin-top: 30px;
     }
 
     .second-section .section-card {
-        flex: 1; /* Que ocupen el mismo ancho */
-        min-width: 0; /* Evita desbordamiento */
+        flex: 1; 
+        min-width: 0;
     }
     
-    /* Ajuste extra para el header de vacunas en dashboard */
     .second-section .section-header {
-        align-items: center; /* Centrar verticalmente título y botón */
+        align-items: center;
     }
 </style>
 
@@ -94,7 +89,6 @@
     <div class="section-header">
         <h2>Gestión de pacientes</h2>
 
-        <!-- Botón Paciente (Ya tenía el estilo .btn-agregar correcto) -->
         <button class="btn-agregar" onclick="openPatientModal()">
             <i class="fa-solid fa-plus"></i>
             Agregar paciente
@@ -106,14 +100,14 @@
         <div class="table-header">
             <span>PACIENTE</span>
             <span>TUTOR</span>
-            <span>EDAD/SANGRE</span>
+            <span>EDAD</span>
+            <span>SANGRE</span>
             <span>ALERGIAS</span>
             <span>ESTADO</span>
         </div>
 
         {% for p in top_patients %}
         <div class="patient-row">
-
             <!-- PACIENTE -->
             <div class="patient-info">
                 <div class="avatar">
@@ -122,23 +116,22 @@
 
                 <div>
                     <p>{{ p.first_name }} {{ p.last_name }}</p>
-                    <small>ID: P{{ p.patient_id }}</small>
+                    <small class="id">ID: P{{ p.patient_id }}</small>
                 </div>
             </div>
 
-            <!-- TUTOR -->
             <div>{{ p.guardian }}</div>
 
-            <!-- EDAD / SANGRE -->
             <div>
                 <p>{{ p.age }} años</p>
-                <span class="blood">{{ p.blood_type }}</span>
             </div>
 
-            <!-- ALERGIAS -->
+            <div>
+                <span class="blood A">{{ p.blood_type }}</span>
+            </div>
+
             <div>{{ p.allergies }}</div>
 
-            <!-- ESTADO -->
             <div class="status ok">Al día</div>
 
         </div>
@@ -153,7 +146,6 @@
         <div class="section-header">
             <h2>Inventario de vacunas</h2>
             
-            <!-- Botón Vacuna modificado para verse rosa -->
             <div id="btn-add-vaccine-dashboard" onclick="openVaccineModal()">
                 <i class="fa-solid fa-plus"></i>
                 Agregar vacuna
@@ -201,7 +193,6 @@
     </section>
 </div>
 
-<!-- Incluimos los archivos HTML de los modales -->
 {% include 'nuevoPaciente.html' %}
 {% include 'nuevaVacuna.html' %}
 
