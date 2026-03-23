@@ -70,6 +70,16 @@ document.getElementById('searchInput').addEventListener('input', function() {
     });
 });
 
+// Si llega un parametro ?q=... desde la busqueda global, aplicarlo al abrir.
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = (params.get('q') || '').trim();
+    const searchInput = document.getElementById('searchInput');
+    if (!q || !searchInput) return;
+    searchInput.value = q;
+    searchInput.dispatchEvent(new Event('input'));
+})();
+
 document.querySelectorAll('.delete-patient-btn').forEach(btn => {
     btn.addEventListener('click', async function () {
         const patientId = this.dataset.patientId;

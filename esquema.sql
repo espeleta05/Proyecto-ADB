@@ -255,3 +255,183 @@ BEGIN
     ORDER BY fecha_cita;
 END;
 $$;
+
+-- =============================================
+-- REPORTES PUBLICOS (AGREGADOS, SIN DATOS PII)
+-- =============================================
+
+DROP FUNCTION IF EXISTS sp_public_report_kpis(DATE, DATE, INT);
+CREATE OR REPLACE FUNCTION sp_public_report_kpis(
+    p_from_date DATE,
+    p_to_date DATE,
+    p_min_group INT DEFAULT 10
+)
+RETURNS TABLE (
+    total_doses_applied BIGINT,
+    target_population BIGINT,
+    reached_population BIGINT,
+    coverage_percent NUMERIC(8,2),
+    avg_delay_days NUMERIC(8,2),
+    active_zones BIGINT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH base_range AS (
+        SELECT vr.*
+        FROM vaccination_records vr
+        WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
+    ),
+    delayed AS (
+        SELECT
+            vr.record_id,
+            GREATEST(
+                (
+                    vr.applied_date - (
+                        p.birth_date + make_interval(months => COALESCE(vs.ideal_age_months, 0))
+                    )::date
+                )::INT,
+                0
+            ) AS delay_days
+        FROM base_range vr
+        INNER JOIN patients p ON p.patient_id = vr.patient_id
+        LEFT JOIN vaccination_scheme vs
+            ON vs.vaccine_id = vr.vaccine_id
+           AND COALESCE(vs.dose_number, '') = COALESCE(vr.dose_applied, '')
+    )
+    SELECT
+        (SELECT COUNT(*) FROM base_range) AS total_doses_applied,
+        (SELECT COUNT(*) FROM patients) AS target_population,
+        (SELECT COUNT(DISTINCT patient_id) FROM base_range) AS reached_population,
+        CASE
+            WHEN (SELECT COUNT(*) FROM patients) = 0 THEN 0
+            ELSE ROUND(
+                ((SELECT COUNT(DISTINCT patient_id) FROM base_range)::NUMERIC / (SELECT COUNT(*) FROM patients)::NUMERIC) * 100,
+                2
+            )
+        END AS coverage_percent,
+        COALESCE((SELECT ROUND(AVG(delay_days)::NUMERIC, 2) FROM delayed), 0) AS avg_delay_days,
+        (
+            SELECT COUNT(*) FROM (
+                SELECT clinic_location
+                FROM base_range
+                WHERE clinic_location IS NOT NULL AND clinic_location <> ''
+                GROUP BY clinic_location
+                HAVING COUNT(DISTINCT patient_id) >= p_min_group
+            ) z
+        ) AS active_zones;
+END;
+$$;
+
+
+DROP FUNCTION IF EXISTS sp_public_report_monthly(DATE, DATE, INT);
+CREATE OR REPLACE FUNCTION sp_public_report_monthly(
+    p_from_date DATE,
+    p_to_date DATE,
+    p_min_group INT DEFAULT 10
+)
+RETURNS TABLE (
+    period_start DATE,
+    period_label TEXT,
+    doses_applied BIGINT,
+    unique_patients BIGINT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        date_trunc('month', vr.applied_date)::DATE AS period_start,
+        to_char(date_trunc('month', vr.applied_date), 'YYYY-MM') AS period_label,
+        COUNT(*)::BIGINT AS doses_applied,
+        COUNT(DISTINCT vr.patient_id)::BIGINT AS unique_patients
+    FROM vaccination_records vr
+    WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
+    GROUP BY date_trunc('month', vr.applied_date)
+    HAVING COUNT(DISTINCT vr.patient_id) >= p_min_group
+    ORDER BY period_start;
+END;
+$$;
+
+
+DROP FUNCTION IF EXISTS sp_public_report_vaccine_progress(DATE, DATE, INT);
+CREATE OR REPLACE FUNCTION sp_public_report_vaccine_progress(
+    p_from_date DATE,
+    p_to_date DATE,
+    p_min_group INT DEFAULT 10
+)
+RETURNS TABLE (
+    vaccine_name VARCHAR(100),
+    doses_applied BIGINT,
+    unique_patients BIGINT,
+    share_percent NUMERIC(8,2)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH total AS (
+        SELECT COUNT(*)::NUMERIC AS total_doses
+        FROM vaccination_records
+        WHERE applied_date BETWEEN p_from_date AND p_to_date
+    )
+    SELECT
+        v.name AS vaccine_name,
+        COUNT(*)::BIGINT AS doses_applied,
+        COUNT(DISTINCT vr.patient_id)::BIGINT AS unique_patients,
+        CASE
+            WHEN (SELECT total_doses FROM total) = 0 THEN 0
+            ELSE ROUND((COUNT(*)::NUMERIC / (SELECT total_doses FROM total)) * 100, 2)
+        END AS share_percent
+    FROM vaccination_records vr
+    INNER JOIN vaccines v ON v.id_vaccine = vr.vaccine_id
+    WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
+    GROUP BY v.name
+    HAVING COUNT(DISTINCT vr.patient_id) >= p_min_group
+    ORDER BY doses_applied DESC
+    LIMIT 8;
+END;
+$$;
+
+
+DROP FUNCTION IF EXISTS sp_public_report_zone_risk(DATE, DATE, INT);
+CREATE OR REPLACE FUNCTION sp_public_report_zone_risk(
+    p_from_date DATE,
+    p_to_date DATE,
+    p_min_group INT DEFAULT 10
+)
+RETURNS TABLE (
+    zone_name VARCHAR(100),
+    doses_applied BIGINT,
+    unique_patients BIGINT,
+    risk_level TEXT,
+    risk_label TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        vr.clinic_location AS zone_name,
+        COUNT(*)::BIGINT AS doses_applied,
+        COUNT(DISTINCT vr.patient_id)::BIGINT AS unique_patients,
+        CASE
+            WHEN COUNT(*) >= 40 THEN 'high'
+            WHEN COUNT(*) >= 20 THEN 'medium'
+            ELSE 'low'
+        END AS risk_level,
+        CASE
+            WHEN COUNT(*) >= 40 THEN 'Alto'
+            WHEN COUNT(*) >= 20 THEN 'Medio'
+            ELSE 'Bajo'
+        END AS risk_label
+    FROM vaccination_records vr
+    WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
+      AND vr.clinic_location IS NOT NULL
+      AND vr.clinic_location <> ''
+    GROUP BY vr.clinic_location
+    HAVING COUNT(DISTINCT vr.patient_id) >= p_min_group
+    ORDER BY doses_applied DESC;
+END;
+$$;

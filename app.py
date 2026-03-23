@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, case, text
 import bcrypt
 import os
 from urllib.parse import quote_plus
+from decimal import Decimal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -261,17 +262,24 @@ def _authenticate_worker(identifier, password):
     if not identifier or not password:
         return None
 
-    worker = Worker.query.filter(
+    identifier_l = identifier.lower()
+
+    candidates = Worker.query.filter(
         or_(
-            func.lower(Worker.mail) == identifier.lower(),
-            func.lower(Worker.name) == identifier.lower(),
+            func.lower(Worker.mail) == identifier_l,
+            func.lower(Worker.name) == identifier_l,
         )
-    ).first()
+    ).order_by(
+        # Prioriza coincidencia por mail, luego por nombre de usuario.
+        case((func.lower(Worker.mail) == identifier_l, 0), else_=1),
+        Worker.worker_id.asc()
+    ).all()
 
-    if not worker or not worker.password_hash:
-        return None
+    for worker in candidates:
+        if worker.password_hash and worker.check_password(password):
+            return worker
 
-    return worker if worker.check_password(password) else None
+    return None
 
 
 def _load_patient_data(id):
@@ -350,17 +358,20 @@ def login():
         if not identifier or not password:
             return render_template("login.html", error="Debes ingresar usuario/mail y contraseña")
 
-        worker = Worker.query.filter(
+        identifier_l = identifier.lower()
+        worker_exists = Worker.query.filter(
             or_(
-                func.lower(Worker.mail) == identifier.lower(),
-                func.lower(Worker.name) == identifier.lower(),
+                func.lower(Worker.mail) == identifier_l,
+                func.lower(Worker.name) == identifier_l,
             )
         ).first()
 
-        if not worker:
+        worker = _authenticate_worker(identifier, password)
+
+        if not worker_exists:
             return render_template("login.html", error="Usuario o correo no encontrado")
 
-        if not worker.password_hash or not worker.check_password(password):
+        if not worker:
             return render_template("login.html", error="Contraseña incorrecta")
 
         session["user_id"]       = worker.worker_id
@@ -708,6 +719,170 @@ def mapa_riesgo():
         low_risk_count=low_risk_count,
         **_session_vars()
     )
+
+
+# =========================
+# REPORTES PUBLICOS
+# =========================
+
+def _parse_date_arg(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _json_ready(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def _serialize_rows(rows):
+    output = []
+    for row in rows:
+        output.append({k: _json_ready(v) for k, v in row.items()})
+    return output
+
+
+@app.route('/reportes-publicos')
+def reportes_publicos():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    return render_template('reportesPublicos.html', **_session_vars())
+
+
+@app.route('/api/global-search', methods=['GET'])
+def api_global_search():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+
+    q = (request.args.get('q') or '').strip()
+    if len(q) < 1:
+        return jsonify({'results': []})
+
+    q_lower = q.lower()
+    pattern = f"%{q_lower}%"
+
+    patient_rows = db.session.query(Patient).filter(
+        or_(
+            func.lower(Patient.first_name).like(pattern),
+            func.lower(Patient.last_name).like(pattern),
+            func.lower((Patient.first_name + ' ' + Patient.last_name)).like(pattern),
+            func.cast(Patient.patient_id, db.String).like(f"%{q}%")
+        )
+    ).order_by(Patient.first_name.asc()).limit(5).all()
+
+    vaccine_rows = db.session.query(Vaccine).filter(
+        or_(
+            func.lower(Vaccine.name).like(pattern),
+            func.cast(Vaccine.id_vaccine, db.String).like(f"%{q}%")
+        )
+    ).order_by(Vaccine.name.asc()).limit(5).all()
+
+    worker_rows = db.session.query(Worker).filter(
+        or_(
+            func.lower(Worker.name).like(pattern),
+            func.lower(Worker.lastname).like(pattern),
+            func.lower((Worker.name + ' ' + Worker.lastname)).like(pattern),
+            func.lower(Worker.mail).like(pattern),
+            func.cast(Worker.worker_id, db.String).like(f"%{q}%")
+        )
+    ).order_by(Worker.name.asc()).limit(5).all()
+
+    results = []
+
+    for p in patient_rows:
+        full_name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
+        results.append({
+            'type': 'paciente',
+            'title': full_name,
+            'subtitle': f"ID {p.patient_id}",
+            'url': f"/pacientes?q={quote_plus(full_name or str(p.patient_id))}"
+        })
+
+    for v in vaccine_rows:
+        results.append({
+            'type': 'vacuna',
+            'title': (v.name or '').strip(),
+            'subtitle': f"ID {v.id_vaccine}",
+            'url': f"/vacunas?q={quote_plus((v.name or '').strip() or str(v.id_vaccine))}"
+        })
+
+    for w in worker_rows:
+        full_name = f"{(w.name or '').strip()} {(w.lastname or '').strip()}".strip()
+        results.append({
+            'type': 'personal',
+            'title': full_name,
+            'subtitle': f"{w.role or 'Sin rol'} - {w.mail or 'Sin correo'}",
+            'url': f"/personal?q={quote_plus(full_name or (w.mail or str(w.worker_id)))}"
+        })
+
+    return jsonify({'results': results[:15]})
+
+
+@app.route('/api/reportes-publicos/resumen', methods=['GET'])
+def api_reportes_publicos_resumen():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+
+    today = date.today()
+    default_from = today - timedelta(days=180)
+
+    from_date = _parse_date_arg(request.args.get('from')) or default_from
+    to_date = _parse_date_arg(request.args.get('to')) or today
+
+    if from_date > to_date:
+        return jsonify({'error': 'Rango de fechas inválido'}), 400
+
+    min_group = request.args.get('min_group', '10').strip()
+    try:
+        min_group = max(int(min_group), 1)
+    except ValueError:
+        min_group = 10
+
+    params = {
+        'from_date': from_date,
+        'to_date': to_date,
+        'min_group': min_group,
+    }
+
+    kpis_row = db.session.execute(
+        text("SELECT * FROM sp_public_report_kpis(:from_date, :to_date, :min_group)"),
+        params,
+    ).mappings().first()
+
+    monthly_rows = db.session.execute(
+        text("SELECT * FROM sp_public_report_monthly(:from_date, :to_date, :min_group)"),
+        params,
+    ).mappings().all()
+
+    vaccine_rows = db.session.execute(
+        text("SELECT * FROM sp_public_report_vaccine_progress(:from_date, :to_date, :min_group)"),
+        params,
+    ).mappings().all()
+
+    zone_rows = db.session.execute(
+        text("SELECT * FROM sp_public_report_zone_risk(:from_date, :to_date, :min_group)"),
+        params,
+    ).mappings().all()
+
+    return jsonify({
+        'filters': {
+            'from': from_date.isoformat(),
+            'to': to_date.isoformat(),
+            'min_group': min_group,
+        },
+        'kpis': {k: _json_ready(v) for k, v in (kpis_row or {}).items()},
+        'monthly': _serialize_rows(monthly_rows),
+        'vaccines': _serialize_rows(vaccine_rows),
+        'zones': _serialize_rows(zone_rows),
+    })
 
 
 # =========================
