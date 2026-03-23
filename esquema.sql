@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS beacons (
     uuid VARCHAR(36),
     major INT,
     minor INT,
-    lugar VARCHAR(100),
+    lugar ENUM ('Sala Espera1','Sala Espera2','Sala Espera3', 'Consultorio1','Consultorio2','Consultorio3','Recepcion','Oficina1','Oficina2'),
     estado VARCHAR(10) CHECK (estado IN ('Online', 'Offline')),
     patient_id INT REFERENCES patients(patient_id)
 );
