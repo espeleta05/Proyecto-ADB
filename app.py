@@ -832,7 +832,7 @@ def api_reportes_publicos_resumen():
         return jsonify({'error': 'No autorizado'}), 401
 
     today = date.today()
-    default_from = today - timedelta(days=180)
+    default_from = today - timedelta(days=3650)
 
     from_date = _parse_date_arg(request.args.get('from')) or default_from
     to_date = _parse_date_arg(request.args.get('to')) or today
@@ -840,11 +840,11 @@ def api_reportes_publicos_resumen():
     if from_date > to_date:
         return jsonify({'error': 'Rango de fechas inválido'}), 400
 
-    min_group = request.args.get('min_group', '10').strip()
+    min_group = request.args.get('min_group', '1').strip()
     try:
         min_group = max(int(min_group), 1)
     except ValueError:
-        min_group = 10
+        min_group = 1
 
     params = {
         'from_date': from_date,

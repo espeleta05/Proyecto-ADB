@@ -20,12 +20,16 @@
                 <input id="toDate" type="date">
             </label>
             <label>Grupo minimo
-                <input id="minGroup" type="number" min="1" step="1" value="10">
+                <input id="minGroup" type="number" min="1" step="1" value="1">
             </label>
             <button id="runReport" class="btn-run" type="button">
                 <i class="fa-solid fa-chart-column"></i>
                 Generar reporte
             </button>
+        </div>
+        <p class="report-note">Cobertura = personas con al menos una dosis / poblacion objetivo. Retraso = dias promedio despues de la edad ideal del esquema.</p>
+        <div id="reportNoData" class="report-no-data" hidden>
+            No hay registros en el rango seleccionado. Ajusta fechas o verifica que existan aplicaciones cargadas.
         </div>
     </section>
 
@@ -67,6 +71,48 @@
         </article>
     </section>
 
+    <section class="charts-grid">
+        <article class="panel">
+            <h3>Detalle mensual</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mes</th>
+                            <th>Dosis aplicadas</th>
+                            <th>Personas atendidas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyBody">
+                        <tr>
+                            <td colspan="3">Sin datos aun.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        <article class="panel">
+            <h3>Detalle por vacuna</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vacuna</th>
+                            <th>Dosis</th>
+                            <th>Personas</th>
+                            <th>% del total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vaccinesBody">
+                        <tr>
+                            <td colspan="4">Sin datos aun.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+
     <section class="panel">
         <h3>Zonas con actividad (agregado)</h3>
         <div class="table-wrap">
@@ -96,6 +142,8 @@
     const minGroupInput = document.getElementById('minGroup');
     const runButton = document.getElementById('runReport');
     const zonesBody = document.getElementById('zonesBody');
+    const monthlyBody = document.getElementById('monthlyBody');
+    const vaccinesBody = document.getElementById('vaccinesBody');
 
     const fmt = new Intl.NumberFormat('es-MX');
     const fmtPct = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -103,11 +151,12 @@
     const now = new Date();
     const toISO = now.toISOString().slice(0, 10);
     const fromDate = new Date(now);
-    fromDate.setMonth(now.getMonth() - 6);
+    fromDate.setFullYear(now.getFullYear() - 5);
     const fromISO = fromDate.toISOString().slice(0, 10);
 
     fromInput.value = fromISO;
     toInput.value = toISO;
+    const noDataBox = document.getElementById('reportNoData');
 
     let monthlyChart;
     let vaccineChart;
@@ -157,6 +206,19 @@
                 plugins: { legend: { position: 'bottom' } },
             }
         });
+
+        if (!rows.length) {
+            monthlyBody.innerHTML = '<tr><td colspan="3">Sin datos para el rango seleccionado.</td></tr>';
+            return;
+        }
+
+        monthlyBody.innerHTML = rows.map(r => `
+            <tr>
+                <td>${r.period_label}</td>
+                <td>${fmt.format(r.doses_applied || 0)}</td>
+                <td>${fmt.format(r.unique_patients || 0)}</td>
+            </tr>
+        `).join('');
     }
 
     function paintVaccines(rows) {
@@ -180,6 +242,20 @@
                 plugins: { legend: { display: false } },
             }
         });
+
+        if (!rows.length) {
+            vaccinesBody.innerHTML = '<tr><td colspan="4">Sin datos para el rango seleccionado.</td></tr>';
+            return;
+        }
+
+        vaccinesBody.innerHTML = rows.map(r => `
+            <tr>
+                <td>${r.vaccine_name}</td>
+                <td>${fmt.format(r.doses_applied || 0)}</td>
+                <td>${fmt.format(r.unique_patients || 0)}</td>
+                <td>${fmtPct.format(r.share_percent || 0)}%</td>
+            </tr>
+        `).join('');
     }
 
     function paintZones(rows) {
@@ -202,7 +278,7 @@
         const params = new URLSearchParams({
             from: fromInput.value,
             to: toInput.value,
-            min_group: String(minGroupInput.value || 10),
+            min_group: String(minGroupInput.value || 1),
         });
 
         runButton.disabled = true;
@@ -220,8 +296,16 @@
             paintMonthly(data.monthly || []);
             paintVaccines(data.vaccines || []);
             paintZones(data.zones || []);
+
+            const doses = (data.kpis || {}).total_doses_applied || 0;
+            if (noDataBox) {
+                noDataBox.hidden = doses > 0;
+            }
         } catch (err) {
             alert(err.message || 'Error generando reporte');
+            if (noDataBox) {
+                noDataBox.hidden = false;
+            }
         } finally {
             runButton.disabled = false;
             runButton.innerHTML = '<i class="fa-solid fa-chart-column"></i> Generar reporte';

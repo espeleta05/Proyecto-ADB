@@ -286,19 +286,27 @@ BEGIN
     delayed AS (
         SELECT
             vr.record_id,
-            GREATEST(
-                (
-                    vr.applied_date - (
-                        p.birth_date + make_interval(months => COALESCE(vs.ideal_age_months, 0))
-                    )::date
-                )::INT,
-                0
-            ) AS delay_days
+            CASE
+                WHEN sch.ideal_age_months IS NULL THEN NULL
+                ELSE GREATEST(
+                    (
+                        vr.applied_date - (
+                            p.birth_date + make_interval(months => sch.ideal_age_months)
+                        )::date
+                    )::INT,
+                    0
+                )
+            END AS delay_days
         FROM base_range vr
         INNER JOIN patients p ON p.patient_id = vr.patient_id
-        LEFT JOIN vaccination_scheme vs
-            ON vs.vaccine_id = vr.vaccine_id
-           AND COALESCE(vs.dose_number, '') = COALESCE(vr.dose_applied, '')
+        LEFT JOIN LATERAL (
+            SELECT vs.ideal_age_months
+            FROM vaccination_scheme vs
+            WHERE vs.vaccine_id = vr.vaccine_id
+              AND COALESCE(vs.dose_number, '') = COALESCE(vr.dose_applied, '')
+            ORDER BY vs.id_scheme
+            LIMIT 1
+        ) sch ON TRUE
     )
     SELECT
         (SELECT COUNT(*) FROM base_range) AS total_doses_applied,
@@ -349,7 +357,6 @@ BEGIN
     FROM vaccination_records vr
     WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
     GROUP BY date_trunc('month', vr.applied_date)
-    HAVING COUNT(DISTINCT vr.patient_id) >= p_min_group
     ORDER BY period_start;
 END;
 $$;
@@ -388,7 +395,6 @@ BEGIN
     INNER JOIN vaccines v ON v.id_vaccine = vr.vaccine_id
     WHERE vr.applied_date BETWEEN p_from_date AND p_to_date
     GROUP BY v.name
-    HAVING COUNT(DISTINCT vr.patient_id) >= p_min_group
     ORDER BY doses_applied DESC
     LIMIT 8;
 END;
